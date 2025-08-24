@@ -23,6 +23,7 @@ I am not responsible for the actions of users.
 
 ## For GitHub
 
+"Original RAT authors (unknown)"
 
 MIT License
 
