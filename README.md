@@ -23,7 +23,11 @@ I am not responsible for the actions of users.
 
 ## For GitHub
 
-"Original RAT authors (unknown)"
+"Original Remote Access Tool authors (unknown)"
+
+RAT - Remote Access Tool
+
+/ License /
 
 MIT License
 
