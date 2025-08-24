@@ -1,11 +1,27 @@
 # BatRat Source Leak
-Недоратка, и ратить плохо!
-Скоро солью сурс самЬІй свежЬІй поддержЬІте пожалуста ⭐ на Github :)
+Incomplete RAT, performs poorly!  
+Soon I will release the latest source, please support ⭐ on GitHub :)
 
+RAT - Remote Access Tool
 
-I do not distribute harmful software
-these are remote access software sources
-Legal and I am not responsible for the actions of users.
+**For educational purposes only!**  
+I do not distribute harmful software. These are remote access software sources provided **solely for educational purposes** to study and learn.
+
+I do not distribute harmful software.  
+These are remote access software sources provided **for educational purposes only**.  
+I am not responsible for the actions of users.
+
+---
+
+## For GitHub
+
+My attitude
+
+I do not distribute harmful software.  
+These are remote access software sources provided **for educational purposes only**.  
+I am not responsible for the actions of users.
+
+---
 
 MIT License
 
@@ -13,7 +29,7 @@ Copyright (c) 2025 GlibShark
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
+in the Software without restriction, including without limitation the rights9
 to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 copies of the Software, and to permit persons to whom the Software is
 furnished to do so, subject to the following conditions:
@@ -28,4 +44,3 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
-
