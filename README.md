@@ -13,8 +13,6 @@ I am not responsible for the actions of users.
 
 ---
 
-## For GitHub
-
 My attitude
 
 I do not distribute harmful software.  
@@ -22,6 +20,9 @@ These are remote access software sources provided **for educational purposes onl
 I am not responsible for the actions of users.
 
 ---
+
+## For GitHub
+
 
 MIT License
 
