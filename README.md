@@ -27,7 +27,7 @@ I am not responsible for the actions of users.
 
 RAT - Remote Access Tool
 
-/ License /
+/ License in file or here /
 
 MIT License
 
